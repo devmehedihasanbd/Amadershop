@@ -9,7 +9,8 @@
 
 import { getDb } from "./db";
 import { getProduct } from "./catalog";
-import { applyPromo, normalizePromoCode } from "./promos";
+import { applyPromoAsync } from "./promos";
+import { getSettings } from "./settings";
 
 export type PaymentMethodId = "COD" | "BKASH" | "NAGAD" | "ROCKET";
 
@@ -173,11 +174,15 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
   }
 
   const subtotal = resolved.reduce((s, r) => s + r.unitPrice * r.qty, 0);
-  // Promo code is validated server-side; unknown/ineligible codes are ignored.
-  const promo = applyPromo(input.promoCode, subtotal);
+  // Promo code is validated server-side against live DB rules;
+  // unknown/ineligible codes are ignored.
+  const promo = await applyPromoAsync(input.promoCode, subtotal);
   const discount = promo?.discount ?? 0;
   const promoCode = promo?.code ?? null;
-  const deliveryCharge = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
+  // Delivery charges come from storefront settings (DB) with defaults.
+  const settings = await getSettings();
+  const deliveryCharge =
+    subtotal >= settings.freeDeliveryThreshold ? 0 : settings.deliveryCharge;
   const total = subtotal - discount + deliveryCharge;
   const requiresPayment = input.paymentMethod !== "COD";
 

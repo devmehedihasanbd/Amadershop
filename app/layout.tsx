@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
+import AnnouncementBar from "@/components/AnnouncementBar";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
@@ -43,6 +44,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-stone-50 pb-[calc(4.5rem+env(safe-area-inset-bottom))] text-stone-800 antialiased md:pb-0">
         <CartProvider>
+          <AnnouncementBar />
           <Header />
           <main className="min-h-[60vh]">{children}</main>
           <Footer />

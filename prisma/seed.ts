@@ -69,6 +69,35 @@ async function main() {
     });
   }
 
+  // Promo codes (upsert so re-running seed never duplicates).
+  await prisma.promo.upsert({
+    where: { code: "AMADER10" },
+    update: { percent: 10, minOrder: 500, maxDiscount: 500, active: true },
+    create: {
+      code: "AMADER10",
+      percent: 10,
+      minOrder: 500,
+      maxDiscount: 500,
+      active: true,
+    },
+  });
+  console.log("Seeded promo AMADER10.");
+
+  // Storefront settings.
+  const settings: Array<[string, string]> = [
+    ["announcement", ""],
+    ["delivery_charge", "60"],
+    ["free_delivery_threshold", "2000"],
+  ];
+  for (const [key, value] of settings) {
+    await prisma.setting.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value },
+    });
+  }
+  console.log("Seeded settings.");
+
   console.log("Seed complete.");
 }
 

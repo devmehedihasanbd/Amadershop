@@ -74,18 +74,33 @@ Just `npm run dev` — the storefront runs on mock data.
 
 See `.env.example` for details. Never commit a real `.env`.
 
+## Admin panel
+
+Visit `/admin` (redirects to `/admin/login`). Protected by a password
+(`ADMIN_PASSWORD` env var) checked with a timing-safe comparison; sessions
+are HMAC-SHA256 signed cookies (`amader_admin`, HttpOnly, 7 days). Route
+protection runs in `middleware.ts`; API routes check `requireAdminApi()`.
+
+Manage from the panel: dashboard (revenue, orders, low stock, 7-day chart),
+orders (filter/search, status flow Confirm → Pack → Ship → Deliver, payment
+toggle), products (CRUD, delete blocked when in order history), categories
+(inline CRUD, delete blocked when products exist), customers, promo codes
+(DB-backed; checkout validates server-side), and settings (announcement bar
+text, delivery charge, free-delivery threshold).
+
 ## Promo codes
 
-Promo rules live in `lib/promos.ts` and are validated **server-side** in
-`POST /api/orders` (the checkout page only shows a live estimate):
+Promo rules live in the `Promo` table (managed at `/admin/promos`) and are
+validated **server-side** in `POST /api/orders` via `applyPromoAsync()`
+(the checkout page only shows a live estimate with the sync `applyPromo()`):
 
 | Code | Deal | Min. order | Max discount |
 |---|---|---|---|
 | `AMADER10` | 10% off | ৳500 | ৳500 |
 
-Codes are case-insensitive. The discount is stored on the order
-(`discount`, `promoCode` columns). Add new codes to the `PROMOS` map —
-no migration needed unless the rule shape changes.
+Codes are case-insensitive; only `active` promos apply. The discount is
+stored on the order (`discount`, `promoCode` columns). When the database is
+unreachable, the hardcoded `PROMOS` fallback in `lib/promos.ts` is used.
 
 ## What's stubbed (honest TODOs)
 

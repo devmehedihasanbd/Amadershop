@@ -18,6 +18,10 @@ export interface PromoRule {
   label: string;
 }
 
+/**
+ * Hardcoded fallback rules. Used when the database is unavailable
+ * (and during `next build`). Mirrors the seeded AMADER10 promo.
+ */
 export const PROMOS: Record<string, PromoRule> = {
   AMADER10: {
     percent: 10,
@@ -37,18 +41,14 @@ export interface PromoResult {
   discount: number;
 }
 
-/**
- * Validate a promo code against a subtotal and return the discount.
- * Returns null when the code is missing, unknown, or the subtotal
- * is below the minimum order value.
- */
-export function applyPromo(
+function applyWithRules(
+  rules: Record<string, PromoRule>,
   rawCode: string | null | undefined,
   subtotal: number
 ): PromoResult | null {
   const code = normalizePromoCode(rawCode ?? "");
   if (!code) return null;
-  const rule = PROMOS[code];
+  const rule = rules[code];
   if (!rule) return null;
   if (subtotal < rule.minOrder) return null;
   const discount = Math.min(
@@ -57,4 +57,59 @@ export function applyPromo(
   );
   if (discount <= 0) return null;
   return { code, discount };
+}
+
+/**
+ * Validate a promo code against a subtotal and return the discount.
+ * Returns null when the code is missing, unknown, or the subtotal
+ * is below the minimum order value.
+ *
+ * Sync version using the hardcoded fallback rules — safe for
+ * client-side live estimates in checkout.
+ */
+export function applyPromo(
+  rawCode: string | null | undefined,
+  subtotal: number
+): PromoResult | null {
+  return applyWithRules(PROMOS, rawCode, subtotal);
+}
+
+/**
+ * Async version that reads ACTIVE promos from the database first,
+ * falling back to the hardcoded rules when the DB is unavailable.
+ * This is the server source of truth (used by lib/orders.ts).
+ */
+import { getDb } from "./db";
+
+export async function getPromoRules(): Promise<Record<string, PromoRule>> {
+  const db = getDb();
+  if (db) {
+    try {
+      const rows = await db.promo.findMany({ where: { active: true } });
+      if (rows.length > 0) {
+        const rules: Record<string, PromoRule> = {};
+        for (const r of rows) {
+          rules[r.code.toUpperCase()] = {
+            percent: r.percent,
+            minOrder: r.minOrder,
+            maxDiscount: r.maxDiscount,
+            label: `${r.percent}% off`,
+          };
+        }
+        return rules;
+      }
+    } catch {
+      /* fall through to hardcoded rules */
+    }
+  }
+  return PROMOS;
+}
+
+/** Server-side promo validation against live database rules. */
+export async function applyPromoAsync(
+  rawCode: string | null | undefined,
+  subtotal: number
+): Promise<PromoResult | null> {
+  const rules = await getPromoRules();
+  return applyWithRules(rules, rawCode, subtotal);
 }
