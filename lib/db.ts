@@ -27,8 +27,14 @@ export function isDbConfigured(): boolean {
 /**
  * Returns the shared PrismaClient, or null when DATABASE_URL is not set.
  * Safe to call at build time and in mock mode.
+ *
+ * NOTE: also returns null during `next build` (NEXT_PHASE). Next.js 16's
+ * prerendering treats any live data access at build time as a build error,
+ * so pages always prerender from the mock catalog; the real database is
+ * only touched at request runtime.
  */
 export function getDb(): PrismaClient | null {
+  if (process.env.NEXT_PHASE === "phase-production-build") return null;
   if (!isDbConfigured()) return null;
   const g = globalThis as GlobalWithPrisma;
   if (!g.__bazarghorPrisma) {
