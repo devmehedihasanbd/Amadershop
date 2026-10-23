@@ -1,4 +1,6 @@
 import Stars from "./Stars";
+import SectionHeader from "./SectionHeader";
+import Reveal from "./Reveal";
 
 const TESTIMONIALS = [
   {
@@ -17,7 +19,7 @@ const TESTIMONIALS = [
   },
   {
     quote:
-      "I was skeptical about buying spices online, but the cardamom and turmeric here are fresher than my local bazaar. BazarGhor is now my monthly stop.",
+      "I was skeptical about buying spices online, but the cardamom and turmeric here are fresher than my local bazaar. Amader Shop is now my monthly stop.",
     name: "Nasrin Sultana",
     area: "Mirpur, Dhaka",
     initial: "N",
@@ -27,20 +29,20 @@ const TESTIMONIALS = [
 export default function Testimonials() {
   return (
     <section className="mx-auto max-w-7xl px-4 py-14" aria-labelledby="testimonials-heading">
-      <h2
-        id="testimonials-heading"
-        className="text-center text-2xl font-extrabold text-stone-800 md:text-3xl"
-      >
-        Loved by Homes Across Dhaka
-      </h2>
-      <p className="mt-2 text-center text-stone-500">
-        Real words from real customers (names shared with permission).
-      </p>
+      <Reveal>
+        <SectionHeader
+          id="testimonials-heading"
+          align="center"
+          eyebrow="Customer stories"
+          title="Loved by Homes Across Dhaka"
+          subtitle="Real words from real customers (names shared with permission)."
+        />
+      </Reveal>
       <div className="mt-8 grid gap-5 md:grid-cols-3">
-        {TESTIMONIALS.map((t) => (
+        {TESTIMONIALS.map((t, i) => (
+          <Reveal key={t.name} delay={Math.min(i, 2) * 90}>
           <figure
-            key={t.name}
-            className="flex flex-col rounded-2xl border border-stone-200 bg-white p-6 shadow-sm"
+            className="flex h-full flex-col rounded-2xl border border-stone-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md"
           >
             <Stars rating={5} />
             <blockquote className="mt-3 flex-1 text-sm leading-relaxed text-stone-600">
@@ -58,6 +60,7 @@ export default function Testimonials() {
               </span>
             </figcaption>
           </figure>
+          </Reveal>
         ))}
       </div>
     </section>

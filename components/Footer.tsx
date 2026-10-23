@@ -16,27 +16,15 @@ export default function Footer() {
 
   return (
     <footer className="bg-green-950 text-green-100">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 md:grid-cols-4">
-        {/* brand */}
-        <div>
-          <p className="text-xl font-extrabold text-white">BazarGhor</p>
-          <p className="mt-1 text-sm text-green-300">খাঁটি দেশি পণ্য, ঘরে বসে</p>
-          <p className="mt-4 text-sm leading-relaxed text-green-200">
-            House 12, Road 5, Dhanmondi,
-            <br />
-            Dhaka 1205, Bangladesh
-          </p>
-          <p className="mt-2 text-sm">
-            <a href="tel:+8809600000000" className="hover:text-white">
-              +880 9600-000000
-            </a>
-            <br />
-            <a href="mailto:hello@bazarghor.example" className="hover:text-white">
-              hello@bazarghor.example
-            </a>
-          </p>
-        </div>
-
+      <div className="mx-auto max-w-7xl px-4 pb-2 pt-12">
+        <p className="text-2xl font-extrabold text-white">
+          Amader Shop <span className="text-green-400">·</span>{" "}
+          <span className="text-base font-medium text-green-300">
+            খাঁটি দেশি পণ্য, ঘরে বসে
+          </span>
+        </p>
+      </div>
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:grid-cols-2 md:grid-cols-4">
         {/* shop */}
         <nav aria-label="Shop">
           <p className="font-semibold text-white">Shop</p>
@@ -45,7 +33,7 @@ export default function Footer() {
               <li key={c.slug}>
                 <Link
                   href={`/category/${c.slug}`}
-                  className="text-green-200 hover:text-white"
+                  className="text-green-200 transition hover:text-white"
                 >
                   {c.name}
                 </Link>
@@ -54,26 +42,51 @@ export default function Footer() {
           </ul>
         </nav>
 
-        {/* company */}
-        <nav aria-label="Company">
-          <p className="font-semibold text-white">Company</p>
+        {/* help */}
+        <nav aria-label="Help">
+          <p className="font-semibold text-white">Help</p>
           <ul className="mt-4 space-y-2 text-sm">
             {[
-              "About Us",
-              "Contact Us",
-              "FAQs",
+              "Track Your Order",
               "Shipping Policy",
               "Return Policy",
+              "FAQs",
               "Privacy Policy",
+              "Terms of Service",
             ].map((label) => (
               <li key={label}>
-                <Link href="#" className="text-green-200 hover:text-white">
+                <Link href="#" className="text-green-200 transition hover:text-white">
                   {label}
                 </Link>
               </li>
             ))}
           </ul>
         </nav>
+
+        {/* contact */}
+        <div>
+          <p className="font-semibold text-white">Contact</p>
+          <p className="mt-4 text-sm leading-relaxed text-green-200">
+            House 12, Road 5, Dhanmondi,
+            <br />
+            Dhaka 1205, Bangladesh
+          </p>
+          <p className="mt-3 text-sm">
+            <a href="tel:+8809600000000" className="transition hover:text-white">
+              +880 9600-000000
+            </a>
+            <br />
+            <a
+              href="mailto:hello@amadershop.example"
+              className="transition hover:text-white"
+            >
+              hello@amadershop.example
+            </a>
+          </p>
+          <p className="mt-3 text-xs text-green-300">
+            Open every day, 9am – 10pm
+          </p>
+        </div>
 
         {/* newsletter */}
         <div>
@@ -112,7 +125,7 @@ export default function Footer() {
 
       <div className="border-t border-green-900">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-green-300 sm:flex-row">
-          <p>© 2026 BazarGhor. All rights reserved.</p>
+          <p>© 2026 Amader Shop. All rights reserved.</p>
           <p>Made with care in Dhaka, Bangladesh</p>
         </div>
       </div>

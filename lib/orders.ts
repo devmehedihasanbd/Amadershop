@@ -9,6 +9,7 @@
 
 import { getDb } from "./db";
 import { getProduct } from "./catalog";
+import { applyPromo, normalizePromoCode } from "./promos";
 
 export type PaymentMethodId = "COD" | "BKASH" | "NAGAD" | "ROCKET";
 
@@ -35,6 +36,7 @@ export interface CreateOrderInput {
   customer: CustomerInput;
   items: OrderItemInput[];
   paymentMethod: PaymentMethodId;
+  promoCode?: string;
   notes?: string;
 }
 
@@ -84,7 +86,7 @@ function makeOrderNumber(): string {
     d.getDate()
   ).padStart(2, "0")}`;
   const rand = Math.floor(1000 + Math.random() * 9000);
-  return `BG-${ymd}-${rand}`;
+  return `AS-${ymd}-${rand}`;
 }
 
 export interface ResolvedItem {
@@ -98,6 +100,8 @@ export interface ResolvedItem {
 export interface CreatedOrder {
   orderNumber: string;
   subtotal: number;
+  discount: number;
+  promoCode: string | null;
   deliveryCharge: number;
   total: number;
   paymentMethod: PaymentMethodId;
@@ -112,6 +116,8 @@ export interface OrderStatusView {
   paymentMethod: string;
   paymentStatus: string;
   subtotal: number;
+  discount: number;
+  promoCode: string | null;
   deliveryCharge: number;
   total: number;
   items: { name: string; qty: number; unitPrice: number }[];
@@ -130,6 +136,8 @@ interface MockOrderRecord {
   paymentStatus: "PENDING" | "PAID" | "FAILED";
   status: string;
   subtotal: number;
+  discount: number;
+  promoCode: string | null;
   deliveryCharge: number;
   total: number;
   notes?: string;
@@ -165,8 +173,12 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
   }
 
   const subtotal = resolved.reduce((s, r) => s + r.unitPrice * r.qty, 0);
+  // Promo code is validated server-side; unknown/ineligible codes are ignored.
+  const promo = applyPromo(input.promoCode, subtotal);
+  const discount = promo?.discount ?? 0;
+  const promoCode = promo?.code ?? null;
   const deliveryCharge = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
-  const total = subtotal + deliveryCharge;
+  const total = subtotal - discount + deliveryCharge;
   const requiresPayment = input.paymentMethod !== "COD";
 
   const db = getDb();
@@ -217,6 +229,8 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
           customerId: customer.id,
           paymentMethod: input.paymentMethod,
           subtotal,
+          discount,
+          promoCode,
           deliveryCharge,
           total,
           notes: input.notes?.trim() || null,
@@ -237,6 +251,8 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
     return {
       orderNumber: order.orderNumber,
       subtotal: order.subtotal,
+      discount: order.discount,
+      promoCode: order.promoCode,
       deliveryCharge: order.deliveryCharge,
       total: order.total,
       paymentMethod: input.paymentMethod,
@@ -262,6 +278,8 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
     paymentStatus: "PENDING",
     status: "PENDING",
     subtotal,
+    discount,
+    promoCode,
     deliveryCharge,
     total,
     notes: input.notes?.trim(),
@@ -273,6 +291,8 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
   return {
     orderNumber,
     subtotal,
+    discount,
+    promoCode,
     deliveryCharge,
     total,
     paymentMethod: input.paymentMethod,
@@ -296,6 +316,8 @@ export async function getOrderByNumber(orderNumber: string): Promise<OrderStatus
       paymentMethod: order.paymentMethod,
       paymentStatus: order.paymentStatus,
       subtotal: order.subtotal,
+      discount: order.discount,
+      promoCode: order.promoCode,
       deliveryCharge: order.deliveryCharge,
       total: order.total,
       items: order.items.map((i) => ({
@@ -316,6 +338,8 @@ export async function getOrderByNumber(orderNumber: string): Promise<OrderStatus
     paymentMethod: rec.paymentMethod,
     paymentStatus: rec.paymentStatus,
     subtotal: rec.subtotal,
+    discount: rec.discount,
+    promoCode: rec.promoCode,
     deliveryCharge: rec.deliveryCharge,
     total: rec.total,
     items: rec.items.map((i) => ({ name: i.name, qty: i.qty, unitPrice: i.unitPrice })),

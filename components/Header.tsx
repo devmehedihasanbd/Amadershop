@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -29,7 +29,7 @@ function Logo() {
       </span>
       <span className="leading-tight">
         <span className="block text-xl font-extrabold tracking-tight text-green-800">
-          BazarGhor
+          Amader Shop
         </span>
         <span className="block text-[11px] font-medium text-stone-500">
           খাঁটি দেশি পণ্য, ঘরে বসে
@@ -43,6 +43,14 @@ export default function Header() {
   const { count, setOpen } = useCart();
   const router = useRouter();
   const [q, setQ] = useState("");
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const submitSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -73,7 +81,11 @@ export default function Header() {
   );
 
   return (
-    <header className="sticky top-0 z-40 shadow-sm">
+    <header
+      className={`sticky top-0 z-40 transition-shadow duration-300 ${
+        scrolled ? "shadow-lg" : "shadow-sm"
+      }`}
+    >
       {/* utility bar */}
       <div className="bg-green-900 text-green-50">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-1.5 text-xs">

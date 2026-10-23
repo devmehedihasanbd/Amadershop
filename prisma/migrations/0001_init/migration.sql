@@ -64,6 +64,8 @@ CREATE TABLE "Order" (
     "paymentMethod" "PaymentMethod" NOT NULL,
     "paymentStatus" "PaymentStatus" NOT NULL DEFAULT 'PENDING',
     "subtotal" INTEGER NOT NULL,
+    "discount" INTEGER NOT NULL DEFAULT 0,
+    "promoCode" TEXT,
     "deliveryCharge" INTEGER NOT NULL,
     "total" INTEGER NOT NULL,
     "notes" TEXT,

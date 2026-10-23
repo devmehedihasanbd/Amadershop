@@ -36,6 +36,7 @@ export async function POST(request: Request) {
         }))
       : [],
     paymentMethod: String(b?.paymentMethod ?? "COD").toUpperCase() as PaymentMethodId,
+    promoCode: typeof b?.promoCode === "string" ? b.promoCode : undefined,
     notes: typeof b?.notes === "string" ? b.notes : undefined,
   };
 
@@ -45,6 +46,8 @@ export async function POST(request: Request) {
       {
         orderNumber: order.orderNumber,
         subtotal: order.subtotal,
+        discount: order.discount,
+        promoCode: order.promoCode,
         deliveryCharge: order.deliveryCharge,
         total: order.total,
         paymentMethod: order.paymentMethod,

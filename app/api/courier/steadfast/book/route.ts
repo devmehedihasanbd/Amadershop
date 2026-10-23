@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       recipientPhone: order.customer.phone,
       recipientAddress: `${order.customer.address}, ${order.customer.area}`,
       codAmount: order.paymentMethod === "COD" ? order.total : 0,
-      note: order.notes ?? `BazarGhor order ${order.orderNumber}`,
+      note: order.notes ?? `Amader Shop order ${order.orderNumber}`,
     });
 
     const saved = await saveSteadfastBooking(

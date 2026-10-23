@@ -32,16 +32,16 @@ export default function ProductCard({ product }: { product: Product }) {
   };
 
   return (
-    <div className="group flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
+    <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1.5 hover:shadow-xl">
       <Link
         href={`/product/${product.slug}`}
-        className="relative block"
+        className="relative block overflow-hidden"
         aria-label={product.name}
       >
         <ProductImage
           category={product.category}
           name={product.name}
-          className="aspect-square w-full"
+          className="aspect-square w-full transition duration-500 ease-out group-hover:scale-110"
         />
         {ribbon && (
           <span

@@ -6,9 +6,9 @@ import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 
 export const metadata: Metadata = {
-  title: "BazarGhor — খাঁটি দেশি পণ্য, ঘরে বসে",
+  title: "Amader Shop — খাঁটি দেশি পণ্য, ঘরে বসে",
   description:
-    "BazarGhor is an online grocery store for Bangladesh: raw honey, premium dates, fresh spices, pure oils and ghee, rice, lentils, nuts and organic specials — delivered to your door.",
+    "Amader Shop is an online grocery store for Bangladesh: raw honey, premium dates, fresh spices, pure oils and ghee, rice, lentils, nuts and organic specials — delivered to your door.",
 };
 
 export default function RootLayout({

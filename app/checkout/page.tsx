@@ -7,6 +7,7 @@ import { useCart } from "@/context/CartContext";
 import { formatPrice, getProduct } from "@/lib/products";
 import ProductImage from "@/components/ProductImage";
 import { DELIVERY_CHARGE, FREE_DELIVERY_THRESHOLD } from "../cart/page";
+import { applyPromo, normalizePromoCode } from "@/lib/promos";
 
 const DHAKA_AREAS = [
   "Dhanmondi",
@@ -38,6 +39,8 @@ const inputCls =
 interface PlacedOrder {
   orderNumber: string;
   total: number;
+  discount: number;
+  promoCode: string | null;
   paymentMethod: string;
   requiresPayment: boolean;
   provider?: string;
@@ -51,17 +54,24 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState("");
   const [area, setArea] = useState(DHAKA_AREAS[0]);
   const [payment, setPayment] = useState<PaymentMethod>("cod");
+  const [promoInput, setPromoInput] = useState("");
+  const [promoApplied, setPromoApplied] = useState(false);
   const [error, setError] = useState("");
   const [placing, setPlacing] = useState(false);
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
 
+  // Live estimate — the server re-validates and is the source of truth.
+  const promoEstimate = promoApplied
+    ? applyPromo(promoInput, subtotal)
+    : null;
+  const discount = promoEstimate?.discount ?? 0;
   const delivery =
     lines.length === 0
       ? 0
       : subtotal >= FREE_DELIVERY_THRESHOLD
         ? 0
         : DELIVERY_CHARGE;
-  const total = subtotal + delivery;
+  const total = subtotal - discount + delivery;
 
   const paymentLabel = useMemo(
     () => PAYMENTS.find((p) => p.id === payment)?.label ?? "",
@@ -97,11 +107,14 @@ export default function CheckoutPage() {
           },
           items: lines.map((l) => ({ slug: l.slug, qty: l.qty })),
           paymentMethod: method.toUpperCase(),
+          ...(promoApplied ? { promoCode: normalizePromoCode(promoInput) } : {}),
         }),
       });
       const data = (await res.json().catch(() => null)) as {
         orderNumber?: string;
         total?: number;
+        discount?: number;
+        promoCode?: string | null;
         paymentMethod?: string;
         requiresPayment?: boolean;
         provider?: string;
@@ -120,6 +133,8 @@ export default function CheckoutPage() {
       setPlaced({
         orderNumber: data.orderNumber,
         total: typeof data.total === "number" ? data.total : total,
+        discount: typeof data.discount === "number" ? data.discount : 0,
+        promoCode: data.promoCode ?? null,
         paymentMethod: data.paymentMethod ?? method.toUpperCase(),
         requiresPayment: Boolean(data.requiresPayment),
         provider: data.provider,
@@ -194,6 +209,16 @@ export default function CheckoutPage() {
                 <span className="font-normal text-stone-500">{phone}</span>
               </dd>
             </div>
+            {placed.discount > 0 && (
+              <div className="flex justify-between">
+                <dt className="text-stone-500">
+                  Discount{placed.promoCode ? ` (${placed.promoCode})` : ""}
+                </dt>
+                <dd className="font-semibold text-green-600">
+                  −{formatPrice(placed.discount)}
+                </dd>
+              </div>
+            )}
             <div className="flex justify-between border-t border-green-200 pt-2">
               <dt className="font-bold">Total</dt>
               <dd className="font-extrabold text-green-700">
@@ -369,11 +394,71 @@ export default function CheckoutPage() {
               );
             })}
           </ul>
+          <div className="mt-4 border-t border-stone-200 pt-4">
+            {promoApplied && promoEstimate ? (
+              <div className="flex items-center justify-between rounded-xl bg-green-50 px-3 py-2.5">
+                <p className="text-sm font-semibold text-green-800">
+                  {promoEstimate.code}{" "}
+                  <span className="font-normal text-green-600">
+                    (−{formatPrice(promoEstimate.discount)})
+                  </span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPromoApplied(false);
+                    setPromoInput("");
+                  }}
+                  className="text-xs font-medium text-stone-500 underline-offset-2 hover:underline"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  value={promoInput}
+                  onChange={(e) => setPromoInput(e.target.value)}
+                  placeholder="Promo code (try AMADER10)"
+                  className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm uppercase outline-none placeholder:normal-case focus:border-green-600 focus:ring-2 focus:ring-green-100"
+                  aria-label="Promo code"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const code = normalizePromoCode(promoInput);
+                    if (!code) return;
+                    const res = applyPromo(code, subtotal);
+                    if (res) {
+                      setPromoInput(code);
+                      setPromoApplied(true);
+                      setError("");
+                    } else {
+                      setError(
+                        "That code didn't apply — check the code or the ৳500 minimum order."
+                      );
+                    }
+                  }}
+                  className="shrink-0 rounded-xl bg-stone-800 px-4 text-sm font-semibold text-white transition hover:bg-stone-900 active:scale-95"
+                >
+                  Apply
+                </button>
+              </div>
+            )}
+          </div>
           <dl className="mt-4 space-y-2 border-t border-stone-200 pt-4 text-sm">
             <div className="flex justify-between">
               <dt className="text-stone-500">Subtotal</dt>
               <dd className="font-semibold">{formatPrice(subtotal)}</dd>
             </div>
+            {discount > 0 && (
+              <div className="flex justify-between">
+                <dt className="text-stone-500">Discount</dt>
+                <dd className="font-semibold text-green-600">
+                  −{formatPrice(discount)}
+                </dd>
+              </div>
+            )}
             <div className="flex justify-between">
               <dt className="text-stone-500">Delivery</dt>
               <dd className="font-semibold">

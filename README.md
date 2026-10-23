@@ -1,4 +1,4 @@
-# BazarGhor — Deshi Grocery Storefront
+# Amader Shop — Deshi Grocery Storefront
 
 Next.js 16 (App Router, TypeScript) e-commerce frontend for a Bangladeshi
 grocery store, with a Prisma + Neon PostgreSQL backend, order API,
@@ -71,6 +71,19 @@ Just `npm run dev` — the storefront runs on mock data.
 
 See `.env.example` for details. Never commit a real `.env`.
 
+## Promo codes
+
+Promo rules live in `lib/promos.ts` and are validated **server-side** in
+`POST /api/orders` (the checkout page only shows a live estimate):
+
+| Code | Deal | Min. order | Max discount |
+|---|---|---|---|
+| `AMADER10` | 10% off | ৳500 | ৳500 |
+
+Codes are case-insensitive. The discount is stored on the order
+(`discount`, `promoCode` columns). Add new codes to the `PROMOS` map —
+no migration needed unless the rule shape changes.
+
 ## What's stubbed (honest TODOs)
 
 - **Online payments:** `POST /api/payments/{bkash,nagad,rocket}/create|callback`
@@ -92,3 +105,14 @@ See `.env.example` for details. Never commit a real `.env`.
 | `npx prisma generate` | Regenerate the Prisma client |
 | `npx prisma migrate deploy` | Apply migrations (needs `DATABASE_URL`) |
 | `npx prisma studio` | Browse data (needs `DATABASE_URL`) |
+
+## Hero images
+
+The three hero banners (`public/hero-1.jpg` … `hero-3.jpg`) are stored as
+base64 **text** in `scripts/hero-images.base64.json` because the GitHub
+snapshot-push API used for deploys only accepts UTF-8 text files — binary
+JPGs cannot be pushed through it. `scripts/decode-hero-images.mjs` restores
+them into `public/` and runs automatically via the `postinstall` hook, so a
+fresh `npm install` (locally or on Vercel) always produces working images
+with no manual step. To replace a banner: overwrite the JPG in `public/`,
+re-encode it into the JSON, and push — the hook does the rest.

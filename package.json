@@ -1,5 +1,5 @@
 {
-  "name": "ghorerbazar-clone",
+  "name": "amadershop",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "prisma db seed",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && node scripts/decode-hero-images.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
