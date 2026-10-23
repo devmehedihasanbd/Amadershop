@@ -36,6 +36,13 @@ yarn-error.log*
 # vercel
 .vercel
 
+# hero banner images are stored as base64 text in
+# scripts/hero-images.base64.json (binary can't go through the
+# snapshot-push API) and decoded by the postinstall hook
+/public/hero-1.jpg
+/public/hero-2.jpg
+/public/hero-3.jpg
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

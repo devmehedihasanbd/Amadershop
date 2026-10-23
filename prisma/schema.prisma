@@ -1,4 +1,4 @@
-// BazarGhor database schema — PostgreSQL (Neon).
+// Amader Shop database schema — PostgreSQL (Neon).
 //
 // Migrations are generated offline with:
 //   npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script
@@ -89,6 +89,8 @@ model Order {
   paymentMethod          PaymentMethod
   paymentStatus          PaymentStatus @default(PENDING)
   subtotal               Int
+  discount               Int                  @default(0)
+  promoCode              String?
   deliveryCharge         Int
   total                  Int
   notes                  String?
