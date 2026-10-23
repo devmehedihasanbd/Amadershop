@@ -54,6 +54,9 @@ npm install
    ```
 4. `npm run dev`
 
+> Production note: the live Vercel deployment reads `DATABASE_URL` from the
+> project's production environment variables, so redeploy after changing it.
+
 ### Without a database
 
 Just `npm run dev` — the storefront runs on mock data.
