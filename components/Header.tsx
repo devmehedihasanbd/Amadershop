@@ -133,7 +133,7 @@ export default function Header() {
           <div className="no-scrollbar mx-auto flex max-w-7xl items-center gap-1 overflow-x-auto px-4">
             <Link
               href="/"
-              className="whitespace-nowrap px-3 py-2.5 text-sm font-medium text-stone-600 hover:text-green-700"
+              className="whitespace-nowrap px-3 py-3 text-sm font-medium text-stone-600 hover:text-green-700"
             >
               Home
             </Link>
@@ -141,7 +141,7 @@ export default function Header() {
               <Link
                 key={c.slug}
                 href={`/category/${c.slug}`}
-                className="whitespace-nowrap px-3 py-2.5 text-sm font-medium text-stone-600 hover:text-green-700"
+                className="whitespace-nowrap px-3 py-3 text-sm font-medium text-stone-600 hover:text-green-700"
               >
                 {c.name}
               </Link>

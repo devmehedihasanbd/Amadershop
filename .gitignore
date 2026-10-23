@@ -43,6 +43,13 @@ yarn-error.log*
 /public/hero-2.jpg
 /public/hero-3.jpg
 
+# PWA icons — same base64-in-JSON pattern as the hero images
+/public/icon-192.png
+/public/icon-512.png
+/public/icon-512-maskable.png
+/public/apple-touch-icon.png
+/public/favicon.png
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -54,7 +54,7 @@ export default function PromoPopup() {
           leaving ? "scale-95" : "scale-100"
         }`}
       >
-        <div className="bg-gradient-to-br from-green-700 to-emerald-900 px-8 pb-8 pt-10 text-center">
+        <div className="bg-gradient-to-br from-green-700 to-emerald-900 px-6 pb-7 pt-9 text-center sm:px-8 sm:pb-8 sm:pt-10">
           <button
             type="button"
             onClick={dismiss}
@@ -68,7 +68,7 @@ export default function PromoPopup() {
           <p className="text-xs font-bold uppercase tracking-widest text-amber-300">
             Welcome offer
           </p>
-          <p className="mt-3 text-5xl font-extrabold text-white">
+          <p className="mt-3 text-4xl font-extrabold text-white sm:text-5xl">
             10% OFF
           </p>
           <p className="mt-2 text-green-100">your first order</p>
@@ -78,7 +78,7 @@ export default function PromoPopup() {
             </span>
           </div>
         </div>
-        <div className="px-8 py-6 text-center">
+        <div className="px-6 py-5 text-center sm:px-8 sm:py-6">
           <p className="text-xs text-stone-500">
             Min. order ৳500 · Max discount ৳500 · Apply the code at checkout
           </p>

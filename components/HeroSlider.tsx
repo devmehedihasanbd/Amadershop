@@ -90,7 +90,7 @@ export default function HeroSlider() {
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <div className="relative h-[480px] md:h-[560px]">
+      <div className="relative h-[430px] md:h-[560px]">
         {SLIDES.map((s, i) => (
           <div
             key={s.image}
@@ -119,13 +119,13 @@ export default function HeroSlider() {
             <span className="inline-block rounded-full bg-amber-400 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-stone-950">
               {SLIDES[index].eyebrow}
             </span>
-            <h1 className="mt-5 text-4xl font-extrabold leading-tight text-white md:text-6xl">
+            <h1 className="mt-4 text-3xl font-extrabold leading-tight text-white sm:text-4xl md:mt-5 md:text-6xl">
               {SLIDES[index].headline}
             </h1>
-            <p className="mt-4 max-w-md text-lg text-stone-200">
+            <p className="mt-3 max-w-md text-base text-stone-200 md:mt-4 md:text-lg">
               {SLIDES[index].sub}
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3 md:mt-8">
               <Link
                 href={SLIDES[index].ctaHref}
                 className="rounded-full bg-amber-400 px-7 py-3 font-semibold text-stone-950 shadow-lg transition hover:scale-105 hover:bg-amber-300 active:scale-95"
@@ -165,17 +165,22 @@ export default function HeroSlider() {
         </button>
 
         {/* dots */}
-        <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 gap-2">
+        <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1 md:bottom-5">
           {SLIDES.map((s, i) => (
             <button
               key={s.image}
               type="button"
               onClick={() => setIndex(i)}
               aria-label={`Go to slide ${i + 1}`}
-              className={`h-2.5 rounded-full transition-all ${
-                i === index ? "w-8 bg-amber-400" : "w-2.5 bg-white/50 hover:bg-white/80"
-              }`}
-            />
+              className="flex min-h-[32px] min-w-[32px] items-center justify-center"
+            >
+              <span
+                aria-hidden="true"
+                className={`block h-2.5 rounded-full transition-all ${
+                  i === index ? "w-8 bg-amber-400" : "w-2.5 bg-white/50"
+                }`}
+              />
+            </button>
           ))}
         </div>
       </div>

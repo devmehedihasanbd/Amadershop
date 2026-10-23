@@ -90,7 +90,7 @@ export default function CartDrawer() {
                           <button
                             type="button"
                             onClick={() => setQty(line.slug, line.qty - 1)}
-                            className="px-2.5 py-1 text-stone-600 hover:text-green-700"
+                            className="flex min-h-[40px] min-w-[40px] items-center justify-center text-lg text-stone-600 hover:text-green-700"
                             aria-label="Decrease quantity"
                           >
                             −
@@ -101,7 +101,7 @@ export default function CartDrawer() {
                           <button
                             type="button"
                             onClick={() => setQty(line.slug, line.qty + 1)}
-                            className="px-2.5 py-1 text-stone-600 hover:text-green-700"
+                            className="flex min-h-[40px] min-w-[40px] items-center justify-center text-lg text-stone-600 hover:text-green-700"
                             aria-label="Increase quantity"
                           >
                             +

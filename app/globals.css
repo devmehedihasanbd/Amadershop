@@ -11,6 +11,19 @@ html {
 
 body {
   font-family: var(--font-sans);
+  /* never allow sideways scrolling / rubber-banding on mobile */
+  overflow-x: clip;
+}
+
+/* remove the 300ms tap delay + double-tap zoom on interactive elements */
+a,
+button,
+input,
+select,
+textarea,
+label {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* hide scrollbars on horizontal nav rows */

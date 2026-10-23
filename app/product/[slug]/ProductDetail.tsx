@@ -20,7 +20,56 @@ export default function ProductDetail({ product }: { product: Product }) {
   };
 
   return (
-    <div className="grid gap-8 md:grid-cols-2">
+    <>
+      {/* sticky add-to-cart bar — mobile app feel (sits above the tab bar) */}
+      <div className="fixed inset-x-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom))] z-30 border-t border-stone-200 bg-white/95 px-4 pb-2 pt-2 backdrop-blur-lg md:hidden">
+        <div className="flex items-center gap-3">
+          <ProductImage
+            category={product.category}
+            name={product.name}
+            className="h-11 w-11 shrink-0 rounded-xl"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-stone-800">
+              {product.name}
+            </p>
+            <p className="text-sm font-extrabold text-green-700">
+              {formatPrice(product.price)}
+              <span className="ml-1 text-xs font-normal text-stone-500">
+                / {product.unit}
+              </span>
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center rounded-full border border-stone-200">
+            <button
+              type="button"
+              onClick={() => setQty((q) => Math.max(1, q - 1))}
+              className="flex min-h-[40px] min-w-[40px] items-center justify-center text-lg text-stone-600"
+              aria-label="Decrease quantity"
+            >
+              −
+            </button>
+            <span className="w-6 text-center text-sm font-bold">{qty}</span>
+            <button
+              type="button"
+              onClick={() => setQty((q) => Math.min(99, q + 1))}
+              className="flex min-h-[40px] min-w-[40px] items-center justify-center text-lg text-stone-600"
+              aria-label="Increase quantity"
+            >
+              +
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={handleAdd}
+            className="shrink-0 rounded-full bg-green-600 px-5 py-2.5 text-sm font-bold text-white shadow transition active:scale-95"
+          >
+            Add
+          </button>
+        </div>
+      </div>
+
+      <div className="grid gap-8 md:grid-cols-2">
       <div className="relative">
         <ProductImage
           category={product.category}
@@ -64,7 +113,8 @@ export default function ProductDetail({ product }: { product: Product }) {
           </span>
         </div>
 
-        <div className="mt-5 flex items-center gap-3">
+        {/* desktop add-to-cart row — on mobile the sticky bar handles it */}
+        <div className="mt-5 hidden items-center gap-3 md:flex">
           <p className="text-3xl font-extrabold text-green-700">
             {formatPrice(product.price)}
           </p>
@@ -89,7 +139,7 @@ export default function ProductDetail({ product }: { product: Product }) {
             <button
               type="button"
               onClick={() => setQty((q) => Math.max(1, q - 1))}
-              className="px-4 py-2 text-lg text-stone-600 hover:text-green-700"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center text-lg text-stone-600 hover:text-green-700"
               aria-label="Decrease quantity"
             >
               −
@@ -98,7 +148,7 @@ export default function ProductDetail({ product }: { product: Product }) {
             <button
               type="button"
               onClick={() => setQty((q) => Math.min(99, q + 1))}
-              className="px-4 py-2 text-lg text-stone-600 hover:text-green-700"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center text-lg text-stone-600 hover:text-green-700"
               aria-label="Increase quantity"
             >
               +
@@ -135,6 +185,7 @@ export default function ProductDetail({ product }: { product: Product }) {
           </ul>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

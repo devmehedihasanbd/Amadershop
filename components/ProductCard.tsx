@@ -78,7 +78,7 @@ export default function ProductCard({ product }: { product: Product }) {
           <button
             type="button"
             onClick={handleAdd}
-            className="rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-green-700 active:scale-95"
+            className="min-h-[44px] rounded-full bg-green-600 px-5 py-2.5 text-sm font-semibold text-white shadow transition hover:bg-green-700 active:scale-95"
           >
             Add
           </button>

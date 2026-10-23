@@ -34,7 +34,7 @@ const PAYMENTS: { id: PaymentMethod; label: string; note: string }[] = [
 ];
 
 const inputCls =
-  "w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100";
+  "w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100";
 
 interface PlacedOrder {
   orderNumber: string;

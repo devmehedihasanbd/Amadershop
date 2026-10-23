@@ -32,7 +32,7 @@ export default async function ProductPage({
   const related = await getRelatedProducts(product, 4);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10">
+    <div className="mx-auto max-w-7xl px-4 pb-24 pt-10 md:pb-0">
       <ProductDetail product={product} />
 
       <section className="mt-14" aria-labelledby="related-heading">
