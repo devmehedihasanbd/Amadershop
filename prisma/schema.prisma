@@ -1,0 +1,117 @@
+// BazarGhor database schema — PostgreSQL (Neon).
+//
+// Migrations are generated offline with:
+//   npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script
+// and applied with `npx prisma migrate deploy` once DATABASE_URL is set.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PACKED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  COD
+  BKASH
+  NAGAD
+  ROCKET
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  name        String
+  description String?
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  products Product[]
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  name         String
+  description  String   @db.Text
+  details      Json     @default("[]")
+  price        Int // whole taka (BDT)
+  oldPrice     Int?
+  unit         String
+  rating       Float
+  reviewsCount Int      @default(0)
+  badge        String?
+  stock        Int      @default(100)
+  categoryId   String
+  category     Category @relation(fields: [categoryId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orderItems OrderItem[]
+
+  @@index([categoryId])
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String   @unique
+  address   String
+  area      String
+  createdAt DateTime @default(now())
+
+  orders Order[]
+}
+
+model Order {
+  id                     String        @id @default(cuid())
+  orderNumber            String        @unique
+  customerId             String
+  customer               Customer      @relation(fields: [customerId], references: [id])
+  status                 OrderStatus   @default(PENDING)
+  paymentMethod          PaymentMethod
+  paymentStatus          PaymentStatus @default(PENDING)
+  subtotal               Int
+  deliveryCharge         Int
+  total                  Int
+  notes                  String?
+  steadfastConsignmentId String?
+  trackingCode           String?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  items OrderItem[]
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product @relation(fields: [productId], references: [id])
+  productName String // snapshot at order time
+  unitPrice   Int // snapshot at order time (whole taka)
+  qty         Int
+
+  @@index([orderId])
+}
