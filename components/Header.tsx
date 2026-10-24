@@ -6,34 +6,49 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { categories } from "@/lib/products";
 import { useCart } from "@/context/CartContext";
+import { useSiteSettings } from "@/lib/use-site-settings";
 
 function Logo() {
+  const site = useSiteSettings();
+  const name = site?.storeName || "Amader Shop";
+  const tagline = site?.storeTagline || "খাঁটি দেশি পণ্য, ঘরে বসে";
   return (
     <Link href="/" className="flex shrink-0 items-center gap-2.5">
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-600 shadow">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          strokeWidth={1.8}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-6 w-6"
-          aria-hidden="true"
-        >
-          <path d="M5 9l2.5 11a1 1 0 0 0 1 .8h7a1 1 0 0 0 1-.8L19.5 9" />
-          <path d="M3.5 9h17" />
-          <path d="M9 9l3-6 3 6" />
-          <path d="M9.5 13.5h5" />
-        </svg>
-      </span>
+      {site?.logoImage ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={site.logoImage}
+          alt={name}
+          className="h-10 w-10 rounded-xl object-cover shadow"
+        />
+      ) : (
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-600 shadow">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-6 w-6"
+            aria-hidden="true"
+          >
+            <path d="M5 9l2.5 11a1 1 0 0 0 1 .8h7a1 1 0 0 0 1-.8L19.5 9" />
+            <path d="M3.5 9h17" />
+            <path d="M9 9l3-6 3 6" />
+            <path d="M9.5 13.5h5" />
+          </svg>
+        </span>
+      )}
       <span className="leading-tight">
         <span className="block text-xl font-extrabold tracking-tight text-green-800">
-          Amader Shop
+          {name}
         </span>
-        <span className="block text-[11px] font-medium text-stone-500">
-          খাঁটি দেশি পণ্য, ঘরে বসে
-        </span>
+        {tagline && (
+          <span className="block text-[11px] font-medium text-stone-500">
+            {tagline}
+          </span>
+        )}
       </span>
     </Link>
   );

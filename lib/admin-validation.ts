@@ -116,6 +116,25 @@ export function validateProductInput(body: unknown): {
 }
 
 /**
+ * Validate a single image value: a data-URL from the admin uploader
+ * (client-side compressed JPEG) or a plain http(s) URL.
+ * Returns an error message, or null when valid.
+ */
+export function validateOneImage(raw: unknown): string | null {
+  const s = String(raw ?? "").trim();
+  if (!s) return null; // empty = no image; callers decide if required
+  const isDataUrl = /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(s);
+  const isHttpUrl = /^https?:\/\/[^\s]+$/i.test(s) && s.length <= 2000;
+  if (!isDataUrl && !isHttpUrl) {
+    return "Image must be an uploaded photo or an http(s) URL.";
+  }
+  if (s.length > MAX_IMAGE_LENGTH) {
+    return "Image is too large — please use a smaller photo.";
+  }
+  return null;
+}
+
+/**
  * Validate the product photo list. Accepts data-URLs produced by the admin
  * uploader (client-side compressed JPEGs) or plain https URLs.
  */
@@ -130,20 +149,98 @@ export function validateImages(raw: unknown): { images: string[]; errors: string
   }
   const images: string[] = [];
   for (const item of raw.slice(0, MAX_PRODUCT_IMAGES)) {
+    const err = validateOneImage(item);
+    if (err) {
+      errors.push(err === "Image must be an uploaded photo or an http(s) URL."
+        ? "Each photo must be an uploaded image or an http(s) URL."
+        : "One photo is too large — please use a smaller image.");
+      continue;
+    }
     const s = String(item ?? "").trim();
-    const isDataUrl = /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(s);
-    const isHttpUrl = /^https?:\/\/[^\s]+$/i.test(s) && s.length <= 2000;
-    if (!isDataUrl && !isHttpUrl) {
-      errors.push("Each photo must be an uploaded image or an http(s) URL.");
-      continue;
-    }
-    if (s.length > MAX_IMAGE_LENGTH) {
-      errors.push("One photo is too large — please use a smaller image.");
-      continue;
-    }
-    images.push(s);
+    if (s) images.push(s);
   }
   return { images, errors };
+}
+
+export type BannerPlacementInput = "hero" | "offer";
+
+export interface BannerInput {
+  placement: BannerPlacementInput;
+  eyebrow: string | null;
+  title: string;
+  subtitle: string | null;
+  image: string | null;
+  link: string;
+  linkLabel: string | null;
+  sortOrder: number;
+  active: boolean;
+}
+
+function isValidLink(raw: string): boolean {
+  const s = raw.trim();
+  if (s.startsWith("/")) return s.length <= 300 && !/\s/.test(s);
+  return /^https?:\/\/[^\s]+$/i.test(s) && s.length <= 500;
+}
+
+export function validateBannerInput(body: unknown): {
+  data: BannerInput;
+  errors: string[];
+} {
+  const b = (body ?? {}) as Record<string, unknown>;
+  const errors: string[] = [];
+
+  const rawPlacement = String(b.placement ?? "hero").trim().toLowerCase();
+  const placement: BannerPlacementInput =
+    rawPlacement === "offer" ? "offer" : "hero";
+  if (rawPlacement !== "hero" && rawPlacement !== "offer") {
+    errors.push('Placement must be "hero" or "offer".');
+  }
+
+  const title = String(b.title ?? "").trim();
+  if (!title) errors.push("Title is required.");
+  if (title.length > 120) errors.push("Title must be 120 characters or fewer.");
+
+  const eyebrow = String(b.eyebrow ?? "").trim();
+  if (eyebrow.length > 60) errors.push("Eyebrow must be 60 characters or fewer.");
+
+  const subtitle = String(b.subtitle ?? "").trim();
+  if (subtitle.length > 300) errors.push("Subtitle must be 300 characters or fewer.");
+
+  const imageRaw = String(b.image ?? "").trim();
+  const imageErr = validateOneImage(imageRaw);
+  if (imageErr) errors.push(imageErr);
+  const image = imageRaw || null;
+  if (placement === "hero" && !image) {
+    errors.push("A hero banner needs a photo.");
+  }
+
+  const link = String(b.link ?? "/").trim() || "/";
+  if (!isValidLink(link)) errors.push('Link must start with "/" or be an http(s) URL.');
+
+  const linkLabel = String(b.linkLabel ?? "").trim();
+  if (linkLabel.length > 40) errors.push("Button label must be 40 characters or fewer.");
+
+  const sortOrder = Number(b.sortOrder ?? 0);
+  if (!Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 10000) {
+    errors.push("Sort order must be a whole number (0 – 10,000).");
+  }
+
+  const active = b.active === undefined ? true : Boolean(b.active);
+
+  return {
+    data: {
+      placement,
+      eyebrow: eyebrow || null,
+      title,
+      subtitle: subtitle || null,
+      image,
+      link,
+      linkLabel: linkLabel || null,
+      sortOrder,
+      active,
+    },
+    errors,
+  };
 }
 
 export interface CategoryInput {

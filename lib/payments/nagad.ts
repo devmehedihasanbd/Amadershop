@@ -19,9 +19,9 @@
 /*    - Wire /api/payments/nagad/callback to executePayment().        */
 /* ------------------------------------------------------------------ */
 
+import { getSecret } from "@/lib/site-config";
 import {
   NotConfiguredError,
-  missingEnv,
   type CreatePaymentInput,
   type CreatePaymentResult,
   type ExecutePaymentInput,
@@ -29,23 +29,29 @@ import {
   type PaymentProvider,
 } from "./types";
 
-const REQUIRED_ENV = [
-  "NAGAD_MERCHANT_ID",
-  "NAGAD_MERCHANT_NUMBER",
-  "NAGAD_PUBLIC_KEY",
-  "NAGAD_PRIVATE_KEY",
-  "NAGAD_BASE_URL",
+const REQUIRED: Array<[env: string, settingKey: string]> = [
+  ["NAGAD_MERCHANT_ID", "pay_nagad_merchant_id"],
+  ["NAGAD_MERCHANT_NUMBER", "pay_nagad_merchant_number"],
+  ["NAGAD_PUBLIC_KEY", "pay_nagad_public_key"],
+  ["NAGAD_PRIVATE_KEY", "pay_nagad_private_key"],
+  ["NAGAD_BASE_URL", "pay_nagad_base_url"],
 ];
 
-function config() {
-  const missing = missingEnv(REQUIRED_ENV);
+async function config() {
+  const values: Record<string, string> = {};
+  const missing: string[] = [];
+  for (const [env, key] of REQUIRED) {
+    const v = await getSecret(env, key);
+    if (!v) missing.push(env);
+    else values[env] = v;
+  }
   if (missing.length > 0) throw new NotConfiguredError("Nagad", missing);
   return {
-    merchantId: process.env.NAGAD_MERCHANT_ID!.trim(),
-    merchantNumber: process.env.NAGAD_MERCHANT_NUMBER!.trim(),
-    publicKey: process.env.NAGAD_PUBLIC_KEY!.trim(),
-    privateKey: process.env.NAGAD_PRIVATE_KEY!.trim(),
-    baseUrl: process.env.NAGAD_BASE_URL!.trim().replace(/\/$/, ""),
+    merchantId: values.NAGAD_MERCHANT_ID,
+    merchantNumber: values.NAGAD_MERCHANT_NUMBER,
+    publicKey: values.NAGAD_PUBLIC_KEY,
+    privateKey: values.NAGAD_PRIVATE_KEY,
+    baseUrl: values.NAGAD_BASE_URL.replace(/\/$/, ""),
   };
 }
 
@@ -53,7 +59,7 @@ class NagadProvider implements PaymentProvider {
   readonly id = "nagad" as const;
 
   async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
-    const c = config();
+    const c = await config();
 
     // TODO: build the real initialize payload:
     //   const sensitiveData = { merchantId, datetime, orderId, challenge };
@@ -71,7 +77,7 @@ class NagadProvider implements PaymentProvider {
   }
 
   async executePayment(input: ExecutePaymentInput): Promise<ExecutePaymentResult> {
-    const c = config();
+    const c = await config();
 
     // TODO: verify the payment server-side:
     //   POST {BASE}/api/dfs/verify/payment/{paymentRefId}

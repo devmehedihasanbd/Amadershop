@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getDb } from "@/lib/db";
+import { getPaymentMethods } from "@/lib/site-config";
 import {
   DataTable,
   EmptyState,
@@ -114,6 +115,10 @@ export default async function AdminDashboardPage() {
     lowStockCount,
     recentOrders,
     topProducts,
+    activeBannerCount,
+    activePromoCount,
+    categoryCount,
+    payMethods,
   ] = await Promise.all([
     db.order.aggregate({
       _sum: { total: true },
@@ -138,6 +143,10 @@ export default async function AdminDashboardPage() {
       orderBy: { _sum: { qty: "desc" } },
       take: 5,
     }),
+    db.banner.count({ where: { active: true } }),
+    db.promo.count({ where: { active: true } }),
+    db.category.count(),
+    getPaymentMethods(),
   ]);
 
   // 7-day revenue (non-cancelled orders), oldest → newest.
@@ -247,6 +256,78 @@ export default async function AdminDashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* Store controls — everything editable lives here */}
+      <Panel
+        title="Store controls"
+        action={
+          <span className="text-xs text-stone-400">
+            Name, logo, banners, payments & more
+          </span>
+        }
+      >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            {
+              href: "/admin/settings",
+              title: "Site settings",
+              desc: "Store name, logo, phone, WhatsApp, address, social links",
+              icon: "M12 15a3 3 0 100-6 3 3 0 000 6zM19 12a7 7 0 01-.1 1.2l2 1.6-2 3.4-2.4-1a7 7 0 01-2 1.2L14 20h-4l-.5-2.6a7 7 0 01-2-1.2l-2.4 1-2-3.4 2-1.6A7 7 0 015 12a7 7 0 01.1-1.2l-2-1.6 2-3.4 2.4 1a7 7 0 012-1.2L10 4h4l.5 2.6a7 7 0 012 1.2l2.4-1 2 3.4-2 1.6c.06.4.1.8.1 1.2z",
+            },
+            {
+              href: "/admin/banners",
+              title: "Banners",
+              desc: `${activeBannerCount} active — hero slider & offer cards`,
+              icon: "M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zm0 4l4 4 3-3 4 4 5-5",
+            },
+            {
+              href: "/admin/payments",
+              title: "Payments & courier",
+              desc: `${payMethods.filter((m) => m.enabled).length} payment methods on · Steadfast keys`,
+              icon: "M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2zm0 3h18M7 14h4",
+            },
+            {
+              href: "/admin/promos",
+              title: "Promo codes",
+              desc: `${activePromoCount} active promos — drives the welcome popup`,
+              icon: "M3 9V7a2 2 0 012-2h14a2 2 0 012 2v2a2.5 2.5 0 000 5v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2.5 2.5 0 000-5zM13 5v2m0 3v2m0 3v2",
+            },
+            {
+              href: "/admin/products",
+              title: "Products",
+              desc: `${productCount} products — photos, prices, stock`,
+              icon: "M20 7l-8-4-8 4v10l8 4 8-4zM12 3v8m0 0l8-4m-8 4L4 7m8 12v-8",
+            },
+            {
+              href: "/admin/categories",
+              title: "Categories",
+              desc: `${categoryCount} categories`,
+              icon: "M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z",
+            },
+          ].map((c) => (
+            <Link
+              key={c.href}
+              href={c.href}
+              className="group flex items-start gap-3 rounded-xl border border-stone-200 p-4 transition hover:-translate-y-0.5 hover:border-green-300 hover:shadow-md"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-100 text-green-700 transition group-hover:bg-green-600 group-hover:text-white">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d={c.icon} />
+                </svg>
+              </span>
+              <span className="min-w-0">
+                <span className="block font-bold text-stone-900">
+                  {c.title}
+                  <span className="ml-1.5 font-semibold text-green-700 opacity-0 transition group-hover:opacity-100">
+                    →
+                  </span>
+                </span>
+                <span className="mt-0.5 block text-xs text-stone-500">{c.desc}</span>
+              </span>
+            </Link>
+          ))}
+        </div>
+      </Panel>
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* 7-day revenue chart */}

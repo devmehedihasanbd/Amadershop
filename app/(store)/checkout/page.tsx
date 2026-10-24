@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
@@ -26,11 +26,22 @@ const DHAKA_AREAS = [
 
 type PaymentMethod = "cod" | "bkash" | "nagad" | "rocket";
 
-const PAYMENTS: { id: PaymentMethod; label: string; note: string }[] = [
-  { id: "cod", label: "Cash on Delivery", note: "Pay when your order arrives" },
-  { id: "bkash", label: "bKash", note: "Online payment (coming soon)" },
-  { id: "nagad", label: "Nagad", note: "Online payment (coming soon)" },
-  { id: "rocket", label: "Rocket", note: "Online payment (coming soon)" },
+interface PayMethod {
+  id: PaymentMethod;
+  label: string;
+  enabled: boolean;
+  configured: boolean;
+}
+
+const PAYMENT_NOTES: Record<PaymentMethod, string> = {
+  cod: "Pay when your order arrives",
+  bkash: "Pay securely with bKash",
+  nagad: "Pay securely with Nagad",
+  rocket: "Pay with Rocket",
+};
+
+const FALLBACK_METHODS: PayMethod[] = [
+  { id: "cod", label: "Cash on Delivery", enabled: true, configured: true },
 ];
 
 const inputCls =
@@ -54,11 +65,39 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState("");
   const [area, setArea] = useState(DHAKA_AREAS[0]);
   const [payment, setPayment] = useState<PaymentMethod>("cod");
+  const [payMethods, setPayMethods] = useState<PayMethod[]>(FALLBACK_METHODS);
   const [promoInput, setPromoInput] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
   const [error, setError] = useState("");
   const [placing, setPlacing] = useState(false);
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
+
+  // Payment methods are controlled from the admin panel (/admin/payments).
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/payments/methods")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (cancelled || !json || !Array.isArray(json.methods)) return;
+        const methods = (json.methods as PayMethod[]).filter((m) => m.enabled);
+        if (methods.length === 0) return;
+        setPayMethods(methods);
+        setPayment((current) => {
+          const stillThere = methods.some(
+            (m) => m.id === current && (m.id === "cod" || m.configured)
+          );
+          if (stillThere) return current;
+          const firstUsable = methods.find((m) => m.id === "cod" || m.configured);
+          return firstUsable ? firstUsable.id : current;
+        });
+      })
+      .catch(() => {
+        /* keep COD fallback */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Live estimate — the server re-validates and is the source of truth.
   const promoEstimate = promoApplied
@@ -74,8 +113,8 @@ export default function CheckoutPage() {
   const total = subtotal - discount + delivery;
 
   const paymentLabel = useMemo(
-    () => PAYMENTS.find((p) => p.id === payment)?.label ?? "",
-    [payment]
+    () => payMethods.find((p) => p.id === payment)?.label ?? "",
+    [payment, payMethods]
   );
 
   const submitOrder = async (method: PaymentMethod): Promise<void> => {
@@ -326,30 +365,39 @@ export default function CheckoutPage() {
           <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
             <h2 className="font-bold text-stone-800">Payment method</h2>
             <div className="mt-4 space-y-3">
-              {PAYMENTS.map((p) => (
-                <label
-                  key={p.id}
-                  className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 p-4 transition ${
-                    payment === p.id
-                      ? "border-green-600 bg-green-50"
-                      : "border-stone-200 hover:border-green-300"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    checked={payment === p.id}
-                    onChange={() => setPayment(p.id)}
-                    className="h-4 w-4 accent-green-600"
-                  />
-                  <span>
-                    <span className="block text-sm font-semibold text-stone-800">
-                      {p.label}
+              {payMethods.map((p) => {
+                const usable = p.id === "cod" || p.configured;
+                const selected = payment === p.id;
+                return (
+                  <label
+                    key={p.id}
+                    className={`flex items-center gap-3 rounded-xl border-2 p-4 transition ${
+                      !usable
+                        ? "cursor-not-allowed border-stone-200 opacity-60"
+                        : selected
+                          ? "cursor-pointer border-green-600 bg-green-50"
+                          : "cursor-pointer border-stone-200 hover:border-green-300"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="payment"
+                      checked={selected}
+                      disabled={!usable}
+                      onChange={() => setPayment(p.id)}
+                      className="h-4 w-4 accent-green-600"
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-stone-800">
+                        {p.label}
+                      </span>
+                      <span className="block text-xs text-stone-500">
+                        {usable ? PAYMENT_NOTES[p.id] : "Coming soon"}
+                      </span>
                     </span>
-                    <span className="block text-xs text-stone-500">{p.note}</span>
-                  </span>
-                </label>
-              ))}
+                  </label>
+                );
+              })}
             </div>
           </section>
 

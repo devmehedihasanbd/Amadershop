@@ -14,8 +14,8 @@ export class NotConfiguredError extends Error {
 
   constructor(provider: string, missing: string[]) {
     super(
-      `${provider} is not configured. Missing env vars: ${missing.join(", ")}. ` +
-        `See .env.example for what to provide.`
+      `${provider} is not configured. Missing: ${missing.join(", ")}. ` +
+        `Add them in the admin panel (/admin/payments) or as env vars (see .env.example).`
     );
     this.name = "NotConfiguredError";
     this.provider = provider;

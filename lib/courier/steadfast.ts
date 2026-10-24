@@ -11,9 +11,8 @@
 /*  confirms the order.                                                */
 /* ------------------------------------------------------------------ */
 
+import { getSecret } from "@/lib/site-config";
 import { NotConfiguredError } from "../payments/types";
-
-const REQUIRED_ENV = ["STEADFAST_API_KEY", "STEADFAST_SECRET_KEY"];
 
 export interface SteadfastOrderInput {
   /** Our order number — becomes Steadfast's invoice reference. */
@@ -33,22 +32,26 @@ export interface SteadfastBooking {
   raw: unknown;
 }
 
-function config() {
-  const missing = REQUIRED_ENV.filter((n) => !process.env[n]?.trim());
+async function config() {
+  const apiKey = await getSecret("STEADFAST_API_KEY", "courier_steadfast_api_key");
+  const secretKey = await getSecret("STEADFAST_SECRET_KEY", "courier_steadfast_secret_key");
+  const missing = [
+    !apiKey && "STEADFAST_API_KEY",
+    !secretKey && "STEADFAST_SECRET_KEY",
+  ].filter(Boolean) as string[];
   if (missing.length > 0) throw new NotConfiguredError("Steadfast", missing);
+  const baseUrl = await getSecret("STEADFAST_BASE_URL", "courier_steadfast_base_url");
   return {
-    apiKey: process.env.STEADFAST_API_KEY!.trim(),
-    secretKey: process.env.STEADFAST_SECRET_KEY!.trim(),
-    baseUrl: (process.env.STEADFAST_BASE_URL || "https://portal.steadfast.com.bd")
-      .trim()
-      .replace(/\/$/, ""),
+    apiKey,
+    secretKey,
+    baseUrl: (baseUrl || "https://portal.steadfast.com.bd").replace(/\/$/, ""),
   };
 }
 
 export async function bookSteadfastConsignment(
   input: SteadfastOrderInput
 ): Promise<SteadfastBooking> {
-  const c = config();
+  const c = await config();
 
   const res = await fetch(`${c.baseUrl}/api/v1/create_order`, {
     method: "POST",

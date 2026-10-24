@@ -46,11 +46,61 @@ const SLIDES: Slide[] = [
 
 const AUTOPLAY_MS = 5000;
 
+interface ApiBanner {
+  id: string;
+  eyebrow: string | null;
+  title: string;
+  subtitle: string | null;
+  image: string | null;
+  link: string;
+  linkLabel: string | null;
+}
+
+function toSlide(b: ApiBanner): Slide | null {
+  if (!b.image) return null;
+  return {
+    image: b.image,
+    alt: b.title,
+    eyebrow: b.eyebrow ?? "",
+    headline: b.title,
+    sub: b.subtitle ?? "",
+    ctaHref: b.link || "/",
+    ctaLabel: b.linkLabel || "Shop Now",
+  };
+}
+
 export default function HeroSlider() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [dbSlides, setDbSlides] = useState<Slide[] | null>(null);
   const touchX = useRef<number | null>(null);
+
+  // Banners managed from the admin panel (/admin/banners). Falls back to
+  // the built-in slides until at least one active hero banner exists.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/banners?placement=hero")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (cancelled || !json || !Array.isArray(json.banners)) return;
+        const slides = (json.banners as ApiBanner[])
+          .map(toSlide)
+          .filter((s): s is Slide => s !== null);
+        if (slides.length > 0) setDbSlides(slides);
+      })
+      .catch(() => {
+        /* keep built-in slides */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const slides = dbSlides ?? SLIDES;
+  useEffect(() => {
+    setIndex(0);
+  }, [dbSlides]);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -61,7 +111,7 @@ export default function HeroSlider() {
   }, []);
 
   const go = useCallback(
-    (dir: 1 | -1) => setIndex((i) => (i + dir + SLIDES.length) % SLIDES.length),
+    (dir: 1 | -1) => setIndex((i) => (i + dir + slides.length) % slides.length),
     []
   );
 
@@ -91,22 +141,32 @@ export default function HeroSlider() {
       onTouchEnd={onTouchEnd}
     >
       <div className="relative h-[430px] md:h-[560px]">
-        {SLIDES.map((s, i) => (
+        {slides.map((s, i) => (
           <div
-            key={s.image}
+            key={s.image.slice(0, 64) + i}
             aria-hidden={i !== index}
             className={`absolute inset-0 transition-opacity duration-1000 ease-out ${
               i === index ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
           >
-            <Image
-              src={s.image}
-              alt={s.alt}
-              fill
-              priority={i === 0}
-              sizes="100vw"
-              className="object-cover"
-            />
+            {s.image.startsWith("/") ? (
+              <Image
+                src={s.image}
+                alt={s.alt}
+                fill
+                priority={i === 0}
+                sizes="100vw"
+                className="object-cover"
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={s.image}
+                alt={s.alt}
+                loading={i === 0 ? "eager" : "lazy"}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            )}
             {/* dark gradient overlay for legibility */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-black/10" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
@@ -116,21 +176,23 @@ export default function HeroSlider() {
         {/* copy */}
         <div className="relative mx-auto flex h-full max-w-7xl items-center px-4">
           <div key={index} className="max-w-xl animate-hero-copy">
-            <span className="inline-block rounded-full bg-amber-400 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-stone-950">
-              {SLIDES[index].eyebrow}
-            </span>
+            {slides[index].eyebrow && (
+              <span className="inline-block rounded-full bg-amber-400 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-stone-950">
+                {slides[index].eyebrow}
+              </span>
+            )}
             <h1 className="mt-4 text-3xl font-extrabold leading-tight text-white sm:text-4xl md:mt-5 md:text-6xl">
-              {SLIDES[index].headline}
+              {slides[index].headline}
             </h1>
             <p className="mt-3 max-w-md text-base text-stone-200 md:mt-4 md:text-lg">
-              {SLIDES[index].sub}
+              {slides[index].sub}
             </p>
             <div className="mt-6 flex flex-wrap gap-3 md:mt-8">
               <Link
-                href={SLIDES[index].ctaHref}
+                href={slides[index].ctaHref}
                 className="rounded-full bg-amber-400 px-7 py-3 font-semibold text-stone-950 shadow-lg transition hover:scale-105 hover:bg-amber-300 active:scale-95"
               >
-                {SLIDES[index].ctaLabel}
+                {slides[index].ctaLabel}
               </Link>
               <a
                 href="#deals"
@@ -166,9 +228,9 @@ export default function HeroSlider() {
 
         {/* dots */}
         <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1 md:bottom-5">
-          {SLIDES.map((s, i) => (
+          {slides.map((s, i) => (
             <button
-              key={s.image}
+              key={i}
               type="button"
               onClick={() => setIndex(i)}
               aria-label={`Go to slide ${i + 1}`}

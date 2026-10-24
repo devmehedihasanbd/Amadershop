@@ -6,9 +6,25 @@ import Link from "next/link";
 const STORAGE_KEY = "amadershop-promo-seen";
 const SHOW_AFTER_MS = 1500;
 
+interface ActivePromo {
+  code: string;
+  percent: number;
+  minOrder: number;
+  maxDiscount: number;
+}
+
+/** Shown when no promo is active in the database. */
+const FALLBACK_PROMO: ActivePromo = {
+  code: "AMADER10",
+  percent: 10,
+  minOrder: 500,
+  maxDiscount: 500,
+};
+
 export default function PromoPopup() {
   const [visible, setVisible] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [promo, setPromo] = useState<ActivePromo>(FALLBACK_PROMO);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -17,6 +33,15 @@ export default function PromoPopup() {
     } catch {
       /* storage unavailable — show once anyway */
     }
+    // The advertised offer follows the promos managed in /admin/promos.
+    fetch("/api/promos/active")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (json?.promo) setPromo(json.promo as ActivePromo);
+      })
+      .catch(() => {
+        /* keep the fallback offer */
+      });
     timer = setTimeout(() => setVisible(true), SHOW_AFTER_MS);
     return () => clearTimeout(timer);
   }, []);
@@ -69,18 +94,19 @@ export default function PromoPopup() {
             Welcome offer
           </p>
           <p className="mt-3 text-4xl font-extrabold text-white sm:text-5xl">
-            10% OFF
+            {promo.percent}% OFF
           </p>
-          <p className="mt-2 text-green-100">your first order</p>
+          <p className="mt-2 text-green-100">your order</p>
           <div className="mx-auto mt-5 inline-flex items-center gap-2 rounded-xl border-2 border-dashed border-amber-300/70 bg-white/10 px-5 py-2.5">
             <span className="text-lg font-extrabold tracking-widest text-amber-300">
-              AMADER10
+              {promo.code}
             </span>
           </div>
         </div>
         <div className="px-6 py-5 text-center sm:px-8 sm:py-6">
           <p className="text-xs text-stone-500">
-            Min. order ৳500 · Max discount ৳500 · Apply the code at checkout
+            Min. order ৳{promo.minOrder.toLocaleString()} · Max discount
+            ৳{promo.maxDiscount.toLocaleString()} · Apply the code at checkout
           </p>
           <Link
             href="/#categories"

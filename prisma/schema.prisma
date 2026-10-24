@@ -122,6 +122,31 @@ model OrderItem {
   @@index([orderId])
 }
 
+enum BannerPlacement {
+  HERO
+  OFFER
+}
+
+/// Homepage banners + offer cards, fully managed from the admin panel.
+/// placement HERO  -> top slider (image required)
+/// placement OFFER -> "Current offers" cards (image optional; gradient fallback)
+model Banner {
+  id        String          @id @default(cuid())
+  placement BannerPlacement @default(HERO)
+  eyebrow   String?
+  title     String
+  subtitle  String?         @db.Text
+  image     String?         @db.Text // data-URL or https URL
+  link      String          @default("/")
+  linkLabel String?
+  sortOrder Int             @default(0)
+  active    Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([placement, active])
+}
+
 model Promo {
   id          String   @id @default(cuid())
   code        String   @unique

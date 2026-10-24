@@ -5,6 +5,7 @@ import {
   type CreateOrderInput,
   type PaymentMethodId,
 } from "@/lib/orders";
+import { getPaymentMethods } from "@/lib/site-config";
 
 const PROVIDER_LABEL: Record<PaymentMethodId, string> = {
   COD: "Cash on Delivery",
@@ -39,6 +40,16 @@ export async function POST(request: Request) {
     promoCode: typeof b?.promoCode === "string" ? b.promoCode : undefined,
     notes: typeof b?.notes === "string" ? b.notes : undefined,
   };
+
+  // Honor the admin panel's payment toggles (/admin/payments).
+  const methods = await getPaymentMethods();
+  const chosen = methods.find((m) => m.id === input.paymentMethod.toLowerCase());
+  if (!chosen?.enabled) {
+    return NextResponse.json(
+      { error: "Invalid order.", details: ["This payment method is not available right now."] },
+      { status: 400 }
+    );
+  }
 
   try {
     const order = await createOrder(input);

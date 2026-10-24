@@ -1,5 +1,6 @@
 import Link from "next/link";
 import HeroSlider from "@/components/HeroSlider";
+import OfferBanners from "@/components/OfferBanners";
 import PromoPopup from "@/components/PromoPopup";
 import CategoryCard from "@/components/CategoryCard";
 import ProductCard from "@/components/ProductCard";
@@ -142,7 +143,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Offer banners */}
+      {/* Offer banners — managed from /admin/banners */}
       <section
         id="deals"
         className="mx-auto max-w-7xl scroll-mt-32 px-4 py-14"
@@ -150,52 +151,7 @@ export default async function Home() {
         <h2 id="deals-heading" className="sr-only">
           Current offers
         </h2>
-        <div className="grid gap-5 md:grid-cols-2">
-          <Reveal>
-            <Link
-              href="/category/dates"
-              className="group relative block overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 to-orange-700 p-8 text-white shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-xl"
-            >
-              <div aria-hidden="true" className="absolute -right-10 -top-10 h-44 w-44 rounded-full bg-white/15 transition duration-500 group-hover:scale-125" />
-              <p className="text-xs font-bold uppercase tracking-widest text-amber-100">
-                This week only
-              </p>
-              <p className="mt-2 text-3xl font-extrabold">
-                Up to 15% off
-                <br />
-                Premium Dates
-              </p>
-              <p className="mt-2 text-amber-100">
-                Stock up for the month — Medjool, Ajwa, Sukkari &amp; more.
-              </p>
-              <span className="mt-5 inline-block rounded-full bg-white px-5 py-2.5 text-sm font-bold text-orange-700 transition group-hover:scale-105 group-hover:bg-amber-100">
-                Shop Dates →
-              </span>
-            </Link>
-          </Reveal>
-          <Reveal delay={120}>
-            <Link
-              href="/category/honey"
-              className="group relative block overflow-hidden rounded-3xl bg-gradient-to-br from-green-600 to-emerald-800 p-8 text-white shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-xl"
-            >
-              <div aria-hidden="true" className="absolute -bottom-12 -left-12 h-48 w-48 rounded-full bg-white/10 transition duration-500 group-hover:scale-125" />
-              <p className="text-xs font-bold uppercase tracking-widest text-green-200">
-                Free delivery
-              </p>
-              <p className="mt-2 text-3xl font-extrabold">
-                On orders over
-                <br />
-                ৳2000
-              </p>
-              <p className="mt-2 text-green-100">
-                Fill your cart with raw honey, ghee and spices — delivery is on us.
-              </p>
-              <span className="mt-5 inline-block rounded-full bg-white px-5 py-2.5 text-sm font-bold text-green-800 transition group-hover:scale-105 group-hover:bg-green-100">
-                Shop Honey →
-              </span>
-            </Link>
-          </Reveal>
-        </div>
+        <OfferBanners />
       </section>
 
       {/* New arrivals strip */}

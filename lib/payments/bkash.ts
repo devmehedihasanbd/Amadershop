@@ -17,9 +17,9 @@
 /*    - Wire /api/payments/bkash/callback to executePayment().         */
 /* ------------------------------------------------------------------ */
 
+import { getSecret } from "@/lib/site-config";
 import {
   NotConfiguredError,
-  missingEnv,
   type CreatePaymentInput,
   type CreatePaymentResult,
   type ExecutePaymentInput,
@@ -27,23 +27,29 @@ import {
   type PaymentProvider,
 } from "./types";
 
-const REQUIRED_ENV = [
-  "BKASH_APP_KEY",
-  "BKASH_APP_SECRET",
-  "BKASH_USERNAME",
-  "BKASH_PASSWORD",
-  "BKASH_BASE_URL",
+const REQUIRED: Array<[env: string, settingKey: string]> = [
+  ["BKASH_APP_KEY", "pay_bkash_app_key"],
+  ["BKASH_APP_SECRET", "pay_bkash_app_secret"],
+  ["BKASH_USERNAME", "pay_bkash_username"],
+  ["BKASH_PASSWORD", "pay_bkash_password"],
+  ["BKASH_BASE_URL", "pay_bkash_base_url"],
 ];
 
-function config() {
-  const missing = missingEnv(REQUIRED_ENV);
+async function config() {
+  const values: Record<string, string> = {};
+  const missing: string[] = [];
+  for (const [env, key] of REQUIRED) {
+    const v = await getSecret(env, key);
+    if (!v) missing.push(env);
+    else values[env] = v;
+  }
   if (missing.length > 0) throw new NotConfiguredError("bKash", missing);
   return {
-    appKey: process.env.BKASH_APP_KEY!.trim(),
-    appSecret: process.env.BKASH_APP_SECRET!.trim(),
-    username: process.env.BKASH_USERNAME!.trim(),
-    password: process.env.BKASH_PASSWORD!.trim(),
-    baseUrl: process.env.BKASH_BASE_URL!.trim().replace(/\/$/, ""),
+    appKey: values.BKASH_APP_KEY,
+    appSecret: values.BKASH_APP_SECRET,
+    username: values.BKASH_USERNAME,
+    password: values.BKASH_PASSWORD,
+    baseUrl: values.BKASH_BASE_URL.replace(/\/$/, ""),
   };
 }
 
@@ -78,7 +84,7 @@ class BkashProvider implements PaymentProvider {
   readonly id = "bkash" as const;
 
   private async grantToken(): Promise<string> {
-    const c = config();
+    const c = await config();
     const data = await bkashFetch(c.baseUrl, "/tokenized/checkout/token/grant", null, c.appKey, {
       app_key: c.appKey,
       app_secret: c.appSecret,
@@ -89,7 +95,7 @@ class BkashProvider implements PaymentProvider {
   }
 
   async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
-    const c = config();
+    const c = await config();
     const idToken = await this.grantToken();
     const data = await bkashFetch(
       c.baseUrl,
@@ -115,7 +121,7 @@ class BkashProvider implements PaymentProvider {
   }
 
   async executePayment(input: ExecutePaymentInput): Promise<ExecutePaymentResult> {
-    const c = config();
+    const c = await config();
     const idToken = await this.grantToken();
     const data = await bkashFetch(
       c.baseUrl,
