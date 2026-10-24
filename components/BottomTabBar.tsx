@@ -17,9 +17,13 @@ const TABS = [
     ),
   },
   {
-    href: "/categories",
+    href: "/shop",
     label: "Shop",
-    match: (p: string) => p === "/categories" || p.startsWith("/category/"),
+    match: (p: string) =>
+      p === "/shop" ||
+      p === "/categories" ||
+      p.startsWith("/category/") ||
+      p.startsWith("/product/"),
     icon: (
       <>
         <path d="M5 9l2.5 11a1 1 0 0 0 1 .8h7a1 1 0 0 0 1-.8L19.5 9" />

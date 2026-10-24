@@ -106,16 +106,17 @@ export default function Footer() {
           <p className="font-semibold text-white">Help</p>
           <ul className="mt-4 space-y-2 text-sm">
             {[
-              "Track Your Order",
-              "Shipping Policy",
-              "Return Policy",
-              "FAQs",
-              "Privacy Policy",
-              "Terms of Service",
-            ].map((label) => (
-              <li key={label}>
-                <Link href="#" className="text-green-200 transition hover:text-white">
-                  {label}
+              { label: "Track Your Order", href: "/track-order" },
+              { label: "Shop All", href: "/shop" },
+              { label: "About Us", href: "/about" },
+              { label: "Contact", href: "/contact" },
+              { label: "FAQs", href: "#" },
+              { label: "Privacy Policy", href: "#" },
+              { label: "Terms of Service", href: "#" },
+            ].map((l) => (
+              <li key={l.label}>
+                <Link href={l.href} className="text-green-200 transition hover:text-white">
+                  {l.label}
                 </Link>
               </li>
             ))}

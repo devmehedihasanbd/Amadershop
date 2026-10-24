@@ -1,13 +1,20 @@
-import Link from "next/link";
 import HeroSlider from "@/components/HeroSlider";
 import OfferBanners from "@/components/OfferBanners";
 import PromoPopup from "@/components/PromoPopup";
-import CategoryCard from "@/components/CategoryCard";
-import ProductCard from "@/components/ProductCard";
+import CategoryCircles from "@/components/CategoryCircles";
+import FlashSale from "@/components/FlashSale";
+import ProductTabs from "@/components/ProductTabs";
+import TrustBadges from "@/components/TrustBadges";
 import Testimonials from "@/components/Testimonials";
 import SectionHeader from "@/components/SectionHeader";
 import Reveal from "@/components/Reveal";
-import { getCategories, getProducts } from "@/lib/catalog";
+import {
+  getCategoriesWithDetails,
+  getBestSellers,
+  getNewArrivals,
+  getTopRated,
+  getFlashSaleProducts,
+} from "@/lib/catalog";
 
 const FEATURES = [
   {
@@ -64,12 +71,14 @@ const MARQUEE_ITEMS = [
 ];
 
 export default async function Home() {
-  const [categories, products] = await Promise.all([
-    getCategories(),
-    getProducts({ sort: "popular" }),
-  ]);
-  const bestSellers = products.filter((p) => p.badge === "best-selling");
-  const newArrivals = products.filter((p) => p.badge === "new");
+  const [categories, bestSellers, newArrivals, topRated, flashSale] =
+    await Promise.all([
+      getCategoriesWithDetails(),
+      getBestSellers(8),
+      getNewArrivals(8),
+      getTopRated(8),
+      getFlashSaleProducts(8),
+    ]);
 
   return (
     <>
@@ -100,7 +109,7 @@ export default async function Home() {
         </div>
       </div>
 
-      {/* Featured categories */}
+      {/* Browse by categories — circular, organic style */}
       <section
         id="categories"
         className="mx-auto max-w-7xl scroll-mt-32 px-4 py-14"
@@ -108,40 +117,19 @@ export default async function Home() {
         <Reveal>
           <SectionHeader
             id="categories-heading"
+            align="center"
             eyebrow="Browse the shelves"
-            title="Featured Categories"
+            title="Browse By Categories"
             subtitle="Seven shelves, one honest bazaar."
           />
         </Reveal>
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
-          {categories.map((c, i) => (
-            <Reveal key={c.slug} delay={Math.min(i, 6) * 60}>
-              <CategoryCard category={c} />
-            </Reveal>
-          ))}
-        </div>
+        <Reveal delay={100}>
+          <CategoryCircles categories={categories} />
+        </Reveal>
       </section>
 
-      {/* Top selling */}
-      <section className="bg-white py-14">
-        <div className="mx-auto max-w-7xl px-4">
-          <Reveal>
-            <SectionHeader
-              id="bestsellers-heading"
-              eyebrow="Customer favourites"
-              title="Top Selling Products"
-              subtitle="The items Dhaka keeps reordering."
-            />
-          </Reveal>
-          <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {bestSellers.map((p, i) => (
-              <Reveal key={p.slug} delay={Math.min(i, 3) * 70}>
-                <ProductCard product={p} />
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Trust badges */}
+      <TrustBadges />
 
       {/* Offer banners — managed from /admin/banners */}
       <section
@@ -154,24 +142,15 @@ export default async function Home() {
         <OfferBanners />
       </section>
 
-      {/* New arrivals strip */}
-      <section className="mx-auto max-w-7xl px-4 pb-14">
-        <Reveal>
-          <SectionHeader
-            id="new-heading"
-            eyebrow="Just landed"
-            title="New Arrivals"
-            subtitle="Fresh off the shelf this month."
-          />
-        </Reveal>
-        <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {newArrivals.map((p, i) => (
-            <Reveal key={p.slug} delay={Math.min(i, 3) * 70}>
-              <ProductCard product={p} />
-            </Reveal>
-          ))}
-        </div>
-      </section>
+      {/* Flash sale */}
+      <FlashSale products={flashSale} />
+
+      {/* Tabbed showcase */}
+      <ProductTabs
+        bestSellers={bestSellers}
+        newArrivals={newArrivals}
+        topRated={topRated}
+      />
 
       {/* Why shop with us */}
       <section className="bg-green-50 py-14">

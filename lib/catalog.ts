@@ -287,3 +287,158 @@ export async function getRelatedProducts(
   }
   return relatedMockProducts(product, count);
 }
+
+/* ------------------------- homepage sections ------------------------ */
+
+export interface CategoryWithDetails {
+  slug: string;
+  name: string;
+  tagline: string;
+  productCount: number;
+  image?: string;
+}
+
+/** Categories with live product counts + a representative photo. */
+export async function getCategoriesWithDetails(): Promise<CategoryWithDetails[]> {
+  const db = getDb();
+  if (db) {
+    try {
+      const rows = await db.category.findMany({
+        orderBy: { sortOrder: "asc" },
+        include: {
+          _count: { select: { products: true } },
+          products: { select: { images: true }, take: 1 },
+        },
+      });
+      if (rows.length > 0) {
+        return rows.map((r) => {
+          const imgs = toStringArray(r.products[0]?.images);
+          return {
+            slug: r.slug,
+            name: r.name,
+            tagline: r.description ?? "",
+            productCount: r._count.products,
+            ...(imgs.length > 0 ? { image: imgs[0] } : {}),
+          };
+        });
+      }
+    } catch {
+      /* fall through to mock data */
+    }
+  }
+  return mockCategories.map((c) => ({
+    slug: c.slug,
+    name: c.name,
+    tagline: "",
+    productCount: mockProducts.filter((p) => p.category === c.slug).length,
+  }));
+}
+
+type DbRow = {
+  slug: string; name: string; description: string; details: unknown;
+  price: number; oldPrice: number | null; unit: string; rating: number;
+  reviewsCount: number; badge: string | null; images: unknown;
+  category: { slug: string };
+};
+
+function mapRows(rows: DbRow[]): Product[] {
+  return rows.map((r) =>
+    toProduct({
+      slug: r.slug, name: r.name, description: r.description,
+      details: r.details, price: r.price, oldPrice: r.oldPrice,
+      unit: r.unit, rating: r.rating, reviewsCount: r.reviewsCount,
+      badge: r.badge, images: r.images, category: r.category,
+    })
+  );
+}
+
+/** Top sellers by actual units sold (falls back to the badge). */
+export async function getBestSellers(limit = 8): Promise<Product[]> {
+  const db = getDb();
+  if (db) {
+    try {
+      const grouped = await db.orderItem.groupBy({
+        by: ["productId"],
+        _sum: { qty: true },
+        where: { order: { status: { not: "CANCELLED" } } },
+        orderBy: { _sum: { qty: "desc" } },
+        take: limit,
+      });
+      if (grouped.length > 0) {
+        const ids = grouped.map((g) => g.productId);
+        const rows = await db.product.findMany({
+          where: { id: { in: ids } },
+          include: productInclude,
+        });
+        const byId = new Map(rows.map((r) => [r.id, r]));
+        const ordered = ids
+          .map((id) => byId.get(id))
+          .filter((r): r is (typeof rows)[number] => Boolean(r));
+        return mapRows(ordered);
+      }
+      const badged = await db.product.findMany({
+        where: { badge: "best-selling" },
+        include: productInclude,
+        take: limit,
+      });
+      if (badged.length > 0) return mapRows(badged);
+    } catch {
+      /* fall through to mock data */
+    }
+  }
+  return mockProducts.filter((p) => p.badge === "best-selling").slice(0, limit);
+}
+
+/** Newest products first. */
+export async function getNewArrivals(limit = 8): Promise<Product[]> {
+  const db = getDb();
+  if (db) {
+    try {
+      const rows = await db.product.findMany({
+        include: productInclude,
+        orderBy: { createdAt: "desc" },
+        take: limit,
+      });
+      if (rows.length > 0) return mapRows(rows);
+    } catch {
+      /* fall through to mock data */
+    }
+  }
+  return mockProducts.filter((p) => p.badge === "new").slice(0, limit);
+}
+
+/** Highest rated products. */
+export async function getTopRated(limit = 8): Promise<Product[]> {
+  const db = getDb();
+  if (db) {
+    try {
+      const rows = await db.product.findMany({
+        include: productInclude,
+        orderBy: [{ rating: "desc" }, { reviewsCount: "desc" }],
+        take: limit,
+      });
+      if (rows.length > 0) return mapRows(rows);
+    } catch {
+      /* fall through to mock data */
+    }
+  }
+  return [...mockProducts].sort((a, b) => b.rating - a.rating).slice(0, limit);
+}
+
+/** Discounted products (oldPrice set) — powers the flash sale. */
+export async function getFlashSaleProducts(limit = 8): Promise<Product[]> {
+  const db = getDb();
+  if (db) {
+    try {
+      const rows = await db.product.findMany({
+        where: { oldPrice: { not: null } },
+        include: productInclude,
+        take: limit,
+      });
+      if (rows.length > 0) return mapRows(rows);
+    } catch {
+      /* fall through to mock data */
+    }
+  }
+  return mockProducts.filter((p) => p.oldPrice).slice(0, limit);
+}
