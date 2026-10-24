@@ -5,6 +5,7 @@ import CategoryCircles from "@/components/CategoryCircles";
 import FlashSale from "@/components/FlashSale";
 import ProductTabs from "@/components/ProductTabs";
 import TrustBadges from "@/components/TrustBadges";
+import LifeEasyBanner from "@/components/LifeEasyBanner";
 import Testimonials from "@/components/Testimonials";
 import SectionHeader from "@/components/SectionHeader";
 import Reveal from "@/components/Reveal";
@@ -130,6 +131,9 @@ export default async function Home() {
 
       {/* Trust badges */}
       <TrustBadges />
+
+      {/* "We make your daily life more easy" CTA */}
+      <LifeEasyBanner />
 
       {/* Offer banners — managed from /admin/banners */}
       <section
