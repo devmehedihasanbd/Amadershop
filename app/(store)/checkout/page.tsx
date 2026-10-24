@@ -10,17 +10,23 @@ import { DELIVERY_CHARGE, FREE_DELIVERY_THRESHOLD } from "../cart/page";
 import { applyPromo, normalizePromoCode } from "@/lib/promos";
 import {
   DISTRICTS,
-  UPAZILAS_BY_DISTRICT,
+  AREAS_BY_DISTRICT,
   ALL_UPAZILAS,
+  CITY_THANAS,
+  BN_DISTRICTS,
+  BN_UPAZILAS,
+  BN_CITY_THANAS,
 } from "@/lib/bd-locations";
 
 /* ------------------- district / upazila auto-detect ------------------- */
-/* Matches a typed upazila name in the free-text address field and        */
-/* returns its district + upazila, so the selects fill themselves.        */
-/* Ambiguous matches (same upazila name in several districts with no     */
-/* district name in the text) are left for manual selection.              */
+/* The customer types their full address once — in English or Bangla —   */
+/* and the District + Upazila/Thana selects below fill themselves, so    */
+/* they never have to type or pick the same place twice.                  */
+/* Priority: upazila/thana match (sets district + area) beats a plain    */
+/* district match (sets district only). Ambiguous matches with no        */
+/* district hint in the text are left for manual selection.              */
 
-function normalizeText(s: string): string {
+function normalizeLatin(s: string): string {
   return s
     .toLowerCase()
     .replace(/['']/g, "")
@@ -29,25 +35,148 @@ function normalizeText(s: string): string {
     .trim();
 }
 
-function detectLocation(
-  text: string
-): { district: string; upazila: string } | null {
-  const hay = ` ${normalizeText(text)} `;
-  if (hay.trim().length < 3) return null;
-  const candidates = ALL_UPAZILAS.filter(({ upazila }) => {
-    const n = normalizeText(upazila);
-    return n.length >= 3 && hay.includes(` ${n} `);
-  });
-  if (candidates.length === 0) return null;
-  if (candidates.length === 1) return candidates[0];
-  const withDistrict = candidates.filter(({ district }) =>
-    hay.includes(` ${normalizeText(district)} `)
-  );
-  if (withDistrict.length === 1) return withDistrict[0];
-  if (withDistrict.length > 1) {
-    return [...withDistrict].sort(
-      (a, b) => b.upazila.length - a.upazila.length
-    )[0];
+function normalizeBangla(s: string): string {
+  return s
+    .replace(/[।,;:!?()\[\]{}"'-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/* Common spelling variants customers actually type. */
+const DISTRICT_ALIASES: Record<string, string> = {
+  "cox bazar": "Cox's Bazar",
+  "chapai nawabganj": "Chapainawabganj",
+  "chapai nababganj": "Chapainawabganj",
+};
+
+function phraseIn(hay: string, needle: string): boolean {
+  return needle.length >= 3 && hay.includes(` ${needle} `);
+}
+
+interface DetectedLocation {
+  district: string;
+  area?: string;
+}
+
+/* City thanas are stored as "Mirpur Model", "Uttara East" etc., but
+   customers type "Mirpur" / "Uttara" — so those base names also match. */
+function thanaMatchNames(name: string): string[] {
+  const out = [name];
+  for (const suffix of [" Model", " East", " West", " Industrial"]) {
+    if (name.endsWith(suffix)) out.push(name.slice(0, -suffix.length));
+  }
+  return out;
+}
+
+function bnThanaMatchNames(bn: string): string[] {
+  const out = [bn];
+  for (const suffix of [" মডেল", " পূর্ব", " পশ্চিম"]) {
+    if (bn.endsWith(suffix)) out.push(bn.slice(0, -suffix.length));
+  }
+  return out;
+}
+
+function resolvePool(
+  pool: DetectedLocation[],
+  distCands: Set<string>
+): DetectedLocation | null | undefined {
+  if (pool.length === 0) return undefined;
+  if (pool.length === 1) return pool[0];
+  const withDist = pool.filter((c) => distCands.has(c.district));
+  if (withDist.length === 1) return withDist[0];
+  if (withDist.length > 1) {
+    // A single longest match wins (most specific); a tie means the
+    // input is still ambiguous, so only the district is certain.
+    const maxLen = Math.max(...withDist.map((c) => c.area?.length ?? 0));
+    const longest = withDist.filter((c) => (c.area?.length ?? 0) === maxLen);
+    if (longest.length === 1) return longest[0];
+    const districts = new Set(withDist.map((c) => c.district));
+    if (districts.size === 1) return { district: [...districts][0] };
+    return null;
+  }
+  const districts = new Set(pool.map((c) => c.district));
+  if (districts.size === 1) return { district: [...districts][0] };
+  return null;
+}
+
+function detectLocation(text: string): DetectedLocation | null {
+  const latin = ` ${normalizeLatin(text)} `;
+  const bangla = ` ${normalizeBangla(text)} `;
+  if (latin.trim().length < 3 && bangla.trim().length < 3) return null;
+
+  const exact: DetectedLocation[] = [];
+  const stripped: DetectedLocation[] = [];
+  const pushUnique = (
+    pool: DetectedLocation[],
+    district: string,
+    area: string
+  ) => {
+    if (!pool.some((c) => c.district === district && c.area === area)) {
+      pool.push({ district, area });
+    }
+  };
+
+  for (const u of ALL_UPAZILAS) {
+    if (phraseIn(latin, normalizeLatin(u.upazila))) {
+      pushUnique(exact, u.district, u.upazila);
+    }
+  }
+  for (const u of BN_UPAZILAS) {
+    if (phraseIn(bangla, normalizeBangla(u.bn))) {
+      pushUnique(exact, u.district, u.upazila);
+    }
+  }
+  for (const t of CITY_THANAS) {
+    const names = thanaMatchNames(t.thana);
+    if (phraseIn(latin, normalizeLatin(names[0]))) {
+      pushUnique(exact, t.district, t.thana);
+    } else if (
+      names.length > 1 &&
+      phraseIn(latin, normalizeLatin(names[1]))
+    ) {
+      pushUnique(stripped, t.district, t.thana);
+    }
+  }
+  for (const t of BN_CITY_THANAS) {
+    const names = bnThanaMatchNames(t.bn);
+    if (phraseIn(bangla, normalizeBangla(names[0]))) {
+      pushUnique(exact, t.district, t.thana);
+    } else if (
+      names.length > 1 &&
+      phraseIn(bangla, normalizeBangla(names[1]))
+    ) {
+      pushUnique(stripped, t.district, t.thana);
+    }
+  }
+
+  const distCands = new Set<string>();
+  for (const d of DISTRICTS) {
+    if (phraseIn(latin, normalizeLatin(d))) distCands.add(d);
+  }
+  for (const [alias, district] of Object.entries(DISTRICT_ALIASES)) {
+    if (phraseIn(latin, alias)) distCands.add(district);
+  }
+  for (const [en, bn] of Object.entries(BN_DISTRICTS)) {
+    if (phraseIn(bangla, normalizeBangla(bn))) distCands.add(en);
+  }
+
+  if (exact.length > 0) {
+    if (stripped.length === 0) {
+      return resolvePool(exact, distCands) ?? null;
+    }
+    if (
+      exact.length === 1 &&
+      stripped.every((c) => c.district === exact[0].district)
+    ) {
+      return exact[0];
+    }
+    return resolvePool([...exact, ...stripped], distCands) ?? null;
+  }
+  if (stripped.length > 0) {
+    return resolvePool(stripped, distCands) ?? null;
+  }
+  if (distCands.size === 1) {
+    return { district: [...distCands][0] };
   }
   return null;
 }
@@ -95,7 +224,7 @@ export default function CheckoutPage() {
   const [upazila, setUpazila] = useState("");
   const [locationTouched, setLocationTouched] = useState(false);
 
-  const upazilas = UPAZILAS_BY_DISTRICT[district] ?? [];
+  const areas = AREAS_BY_DISTRICT[district] ?? [];
 
   /* Auto-detect district + upazila from the typed address, until the
      customer manually picks from the dropdowns. */
@@ -105,7 +234,9 @@ export default function CheckoutPage() {
       const found = detectLocation(value);
       if (found) {
         setDistrict(found.district);
-        setUpazila(found.upazila);
+        // District-only match (e.g. just "Thakurgaon") clears the area
+        // so the customer picks the right upazila/thana for it.
+        setUpazila(found.area ?? "");
       }
     }
   }
@@ -188,7 +319,7 @@ export default function CheckoutPage() {
       return;
     }
     if (!upazila) {
-      setError("Please select your upazila.");
+      setError("Please select your upazila / thana.");
       return;
     }
 
@@ -398,7 +529,7 @@ export default function CheckoutPage() {
                 <textarea
                   value={address}
                   onChange={(e) => handleAddressChange(e.target.value)}
-                  placeholder="House, road, area… (type your upazila name and it will auto-select below)"
+                  placeholder="House, road, area… (type your upazila/thana name in English or Bangla and it will auto-select below)"
                   rows={3}
                   className={inputCls}
                 />
@@ -421,7 +552,7 @@ export default function CheckoutPage() {
               </label>
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-stone-600">
-                  Upazila *
+                  Upazila / Thana *
                 </span>
                 <select
                   value={upazila}
@@ -429,9 +560,9 @@ export default function CheckoutPage() {
                   className={inputCls}
                 >
                   <option value="" disabled>
-                    Select upazila
+                    Select upazila / thana
                   </option>
-                  {upazilas.map((u) => (
+                  {areas.map((u) => (
                     <option key={u} value={u}>
                       {u}
                     </option>
