@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
-import { formatPrice, getProduct } from "@/lib/products";
+import { formatPrice } from "@/lib/products";
 import ProductImage from "@/components/ProductImage";
 
 export const FREE_DELIVERY_THRESHOLD = 2000;
 export const DELIVERY_CHARGE = 60;
 
 export default function CartPage() {
-  const { lines, setQty, removeItem, clear, subtotal } = useCart();
+  const { lines, setQty, removeItem, clear, subtotal, resolveProduct } = useCart();
 
   const delivery =
     lines.length === 0
@@ -61,7 +61,7 @@ export default function CartPage() {
       <div className="mt-8 grid gap-8 lg:grid-cols-3">
         <ul className="space-y-4 lg:col-span-2">
           {lines.map((line) => {
-            const p = getProduct(line.slug);
+            const p = resolveProduct(line.slug);
             if (!p) return null;
             return (
               <li
@@ -72,6 +72,7 @@ export default function CartPage() {
                   <ProductImage
                     category={p.category}
                     name={p.name}
+                    images={p.images}
                     className="h-24 w-24 rounded-2xl"
                   />
                 </Link>

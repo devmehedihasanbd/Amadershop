@@ -8,6 +8,75 @@ import { useCart } from "@/context/CartContext";
 import ProductImage from "@/components/ProductImage";
 import Stars from "@/components/Stars";
 
+function ProductGallery({ product }: { product: Product }) {
+  const photos = product.images ?? [];
+  const [active, setActive] = useState(0);
+  const current = photos[Math.min(active, photos.length - 1)];
+
+  return (
+    <div>
+      <div className="relative">
+        {current ? (
+          <div className="relative aspect-square w-full overflow-hidden rounded-3xl bg-stone-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={current}
+              alt={product.name}
+              className="h-full w-full object-cover"
+            />
+          </div>
+        ) : (
+          <ProductImage
+            category={product.category}
+            name={product.name}
+            className="aspect-square w-full rounded-3xl"
+          />
+        )}
+        {product.badge === "best-selling" && (
+          <span className="absolute left-4 top-4 rounded-full bg-amber-500 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-white shadow">
+            Best Selling
+          </span>
+        )}
+        {product.badge === "new" && (
+          <span className="absolute left-4 top-4 rounded-full bg-green-600 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-white shadow">
+            New Arrival
+          </span>
+        )}
+        {photos.length > 1 && (
+          <span className="absolute bottom-4 right-4 rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white">
+            {Math.min(active, photos.length - 1) + 1} / {photos.length}
+          </span>
+        )}
+      </div>
+      {photos.length > 1 && (
+        <div className="mt-3 flex gap-2.5">
+          {photos.map((src, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setActive(i)}
+              aria-label={`View photo ${i + 1}`}
+              className={`h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition ${
+                i === active
+                  ? "border-green-600"
+                  : "border-transparent opacity-70 hover:opacity-100"
+              }`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={src}
+                alt=""
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ProductDetail({ product }: { product: Product }) {
   const { addItem, setOpen } = useCart();
   const [qty, setQty] = useState(1);
@@ -27,6 +96,7 @@ export default function ProductDetail({ product }: { product: Product }) {
           <ProductImage
             category={product.category}
             name={product.name}
+            images={product.images}
             className="h-11 w-11 shrink-0 rounded-xl"
           />
           <div className="min-w-0 flex-1">
@@ -70,23 +140,7 @@ export default function ProductDetail({ product }: { product: Product }) {
       </div>
 
       <div className="grid gap-8 md:grid-cols-2">
-      <div className="relative">
-        <ProductImage
-          category={product.category}
-          name={product.name}
-          className="aspect-square w-full rounded-3xl"
-        />
-        {product.badge === "best-selling" && (
-          <span className="absolute left-4 top-4 rounded-full bg-amber-500 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-white shadow">
-            Best Selling
-          </span>
-        )}
-        {product.badge === "new" && (
-          <span className="absolute left-4 top-4 rounded-full bg-green-600 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-white shadow">
-            New Arrival
-          </span>
-        )}
-      </div>
+      <ProductGallery product={product} />
 
       <div>
         <p className="text-sm text-stone-500">

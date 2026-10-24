@@ -43,6 +43,7 @@ export async function GET(request: Request) {
       stock: p.stock,
       badge: p.badge,
       rating: p.rating,
+      imageCount: p.images.length,
     })),
   });
 }
@@ -95,6 +96,7 @@ export async function POST(request: Request) {
       stock: data.stock,
       badge: data.badge,
       rating: data.rating,
+      images: data.images,
       categoryId: category.id,
     },
   });

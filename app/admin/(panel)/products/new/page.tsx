@@ -14,6 +14,7 @@ const EMPTY: ProductFormData = {
   rating: "4.5",
   description: "",
   details: "",
+  images: [],
 };
 
 export default async function AdminProductNewPage() {

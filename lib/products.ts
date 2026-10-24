@@ -33,6 +33,7 @@ export interface Product {
   badge: Badge;
   short: string; // 1–2 sentence description
   details: string[]; // 3–4 bullet points
+  images?: string[]; // product photos (first = main); absent = placeholder art
 }
 
 export const products: Product[] = [

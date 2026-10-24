@@ -34,6 +34,7 @@ interface DbProductRow {
   rating: number;
   reviewsCount: number;
   badge: string | null;
+  images: unknown;
   category: { slug: string };
 }
 
@@ -47,6 +48,7 @@ function toStringArray(value: unknown): string[] {
 }
 
 function toProduct(row: DbProductRow): Product {
+  const images = toStringArray(row.images);
   return {
     slug: row.slug,
     name: row.name,
@@ -59,6 +61,7 @@ function toProduct(row: DbProductRow): Product {
     badge: toBadge(row.badge),
     short: row.description,
     details: toStringArray(row.details),
+    ...(images.length > 0 ? { images } : {}),
   };
 }
 
@@ -121,10 +124,12 @@ export interface GetProductsOptions {
   categorySlug?: string;
   q?: string;
   sort?: SortKey;
+  /** Fetch only these slugs (used by the cart to resolve DB products). */
+  slugs?: string[];
 }
 
 export async function getProducts(opts: GetProductsOptions = {}): Promise<Product[]> {
-  const { categorySlug, q, sort = "popular" } = opts;
+  const { categorySlug, q, sort = "popular", slugs } = opts;
   const db = getDb();
 
   if (db) {
@@ -135,6 +140,7 @@ export async function getProducts(opts: GetProductsOptions = {}): Promise<Produc
           ...(categorySlug
             ? { category: { slug: categorySlug } }
             : {}),
+          ...(slugs && slugs.length > 0 ? { slug: { in: slugs } } : {}),
           ...(query
             ? {
                 OR: [
@@ -159,6 +165,7 @@ export async function getProducts(opts: GetProductsOptions = {}): Promise<Produc
           rating: r.rating,
           reviewsCount: r.reviewsCount,
           badge: r.badge,
+          images: r.images,
           category: r.category,
         })
       );
@@ -170,6 +177,10 @@ export async function getProducts(opts: GetProductsOptions = {}): Promise<Produc
   // Mock fallback
   let list = [...mockProducts];
   if (categorySlug) list = list.filter((p) => p.category === categorySlug);
+  if (slugs && slugs.length > 0) {
+    const wanted = new Set(slugs);
+    list = list.filter((p) => wanted.has(p.slug));
+  }
   const query = (q ?? "").trim();
   if (query) {
     const matched = new Set(searchMockProducts(query).map((p) => p.slug));
@@ -198,6 +209,7 @@ export async function getProduct(slug: string): Promise<Product | null> {
           rating: r.rating,
           reviewsCount: r.reviewsCount,
           badge: r.badge,
+          images: r.images,
           category: r.category,
         });
       }
@@ -233,6 +245,7 @@ export async function getRelatedProducts(
           rating: r.rating,
           reviewsCount: r.reviewsCount,
           badge: r.badge,
+          images: r.images,
           category: r.category,
         })
       );
@@ -261,6 +274,7 @@ export async function getRelatedProducts(
               rating: r.rating,
               reviewsCount: r.reviewsCount,
               badge: r.badge,
+              images: r.images,
               category: r.category,
             })
           )

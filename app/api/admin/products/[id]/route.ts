@@ -78,6 +78,7 @@ export async function PATCH(
         stock: data.stock,
         badge: data.badge,
         rating: data.rating,
+        images: data.images,
         categoryId: category.id,
       },
     });

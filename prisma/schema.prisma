@@ -59,6 +59,10 @@ model Product {
   reviewsCount Int      @default(0)
   badge        String?
   stock        Int      @default(100)
+  // Product photos, up to 3. Stored as compressed data-URLs (or https URLs),
+  // first entry is the main photo. Kept in the DB (not the filesystem)
+  // because serverless deployments have no persistent local disk.
+  images       String[] @default([])
   categoryId   String
   category     Category @relation(fields: [categoryId], references: [id])
   createdAt    DateTime @default(now())

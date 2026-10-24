@@ -41,6 +41,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <ProductImage
           category={product.category}
           name={product.name}
+          images={product.images}
           className="aspect-square w-full transition duration-500 ease-out group-hover:scale-110"
         />
         {ribbon && (

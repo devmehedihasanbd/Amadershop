@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
-import { formatPrice, getProduct } from "@/lib/products";
+import { formatPrice } from "@/lib/products";
 import ProductImage from "@/components/ProductImage";
 import { DELIVERY_CHARGE, FREE_DELIVERY_THRESHOLD } from "../cart/page";
 import { applyPromo, normalizePromoCode } from "@/lib/promos";
@@ -48,7 +48,7 @@ interface PlacedOrder {
 }
 
 export default function CheckoutPage() {
-  const { lines, subtotal, clear } = useCart();
+  const { lines, subtotal, clear, resolveProduct } = useCart();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -372,13 +372,14 @@ export default function CheckoutPage() {
           <h2 className="font-bold text-stone-800">Order Summary</h2>
           <ul className="mt-4 space-y-3">
             {lines.map((line) => {
-              const p = getProduct(line.slug);
+              const p = resolveProduct(line.slug);
               if (!p) return null;
               return (
                 <li key={line.slug} className="flex items-center gap-3">
                   <ProductImage
                     category={p.category}
                     name={p.name}
+                    images={p.images}
                     className="h-12 w-12 shrink-0 rounded-xl"
                   />
                   <div className="flex-1">

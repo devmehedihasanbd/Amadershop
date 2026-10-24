@@ -43,6 +43,9 @@ export default async function AdminProductEditPage({
     rating: String(product.rating),
     description: product.description,
     details: details.join("\n"),
+    images: Array.isArray(product.images)
+      ? (product.images as unknown[]).filter((u): u is string => typeof u === "string")
+      : [],
   };
   // Resolve the actual category slug from the product's categoryId.
   const cat = await db.category.findUnique({

@@ -88,6 +88,18 @@ toggle), products (CRUD, delete blocked when in order history), categories
 (DB-backed; checkout validates server-side), and settings (announcement bar
 text, delivery charge, free-delivery threshold).
 
+### Product photos
+
+Each product holds up to 3 photos (`Product.images`, Postgres `TEXT[]`,
+first photo = main). The admin product form uploads from the device gallery:
+photos are compressed in the browser (max 1200px, JPEG q0.72) and stored as
+data-URLs in the database — no extra storage service or keys needed, and it
+survives serverless deploys (unlike the local filesystem). Server-side
+validation caps each photo at ~1.5 MB encoded. The storefront shows the main
+photo on cards/cart and a thumbnail gallery on the product page; products
+without photos keep the placeholder art. If the catalog ever outgrows this,
+move to Vercel Blob or Cloudinary and store URLs in the same column.
+
 ## Promo codes
 
 Promo rules live in the `Promo` table (managed at `/admin/promos`) and are

@@ -112,14 +112,32 @@ const FALLBACK = CATEGORY_STYLE["organic"];
 interface ProductImageProps {
   category: string;
   name: string;
+  /** Real product photos (first = main). Falls back to placeholder art. */
+  images?: string[];
   className?: string;
 }
 
 export default function ProductImage({
   category,
   name,
+  images,
   className = "",
 }: ProductImageProps) {
+  const src = images && images.length > 0 ? images[0] : null;
+  if (src) {
+    return (
+      <div className={`relative overflow-hidden bg-stone-100 ${className}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt={name}
+          loading="lazy"
+          className="h-full w-full object-cover"
+        />
+      </div>
+    );
+  }
+
   const style = CATEGORY_STYLE[category] ?? FALLBACK;
   const initial = name.charAt(0).toUpperCase();
   return (

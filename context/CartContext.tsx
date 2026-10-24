@@ -6,10 +6,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type { ReactNode } from "react";
 import { getProduct } from "@/lib/products";
+import type { Product } from "@/lib/products";
 
 export interface CartLine {
   slug: string;
@@ -26,6 +28,12 @@ interface CartContextValue {
   subtotal: number;
   isOpen: boolean;
   setOpen: (open: boolean) => void;
+  /**
+   * Resolve a cart line to its product. Checks products fetched from the
+   * live catalog first (these include admin-added products and photos),
+   * then falls back to the bundled mock catalog.
+   */
+  resolveProduct: (slug: string) => Product | undefined;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -37,9 +45,12 @@ function loadInitial(): CartLine[] {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as CartLine[];
-    // drop anything that no longer matches the catalog
     return parsed.filter(
-      (l) => getProduct(l.slug) && Number.isInteger(l.qty) && l.qty > 0
+      (l) =>
+        typeof l?.slug === "string" &&
+        l.slug.length > 0 &&
+        Number.isInteger(l.qty) &&
+        l.qty > 0
     );
   } catch {
     return [];
@@ -49,6 +60,51 @@ function loadInitial(): CartLine[] {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>(loadInitial);
   const [isOpen, setOpen] = useState(false);
+  // Products fetched from the live API (DB-first), keyed by slug.
+  const [fetched, setFetched] = useState<Record<string, Product>>({});
+  const fetchingRef = useRef<Set<string>>(new Set());
+
+  const resolveProduct = useCallback(
+    (slug: string): Product | undefined => fetched[slug] ?? getProduct(slug),
+    [fetched]
+  );
+
+  // Lazily fetch any cart slugs the bundled catalog doesn't know
+  // (e.g. products added later through the admin panel).
+  useEffect(() => {
+    const missing = lines
+      .map((l) => l.slug)
+      .filter(
+        (slug) =>
+          !getProduct(slug) && !fetched[slug] && !fetchingRef.current.has(slug)
+      );
+    if (missing.length === 0) return;
+    const unique = [...new Set(missing)];
+    unique.forEach((s) => fetchingRef.current.add(s));
+    let cancelled = false;
+    fetch(`/api/products?slugs=${unique.map(encodeURIComponent).join(",")}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (cancelled || !json || !Array.isArray(json.products)) return;
+        setFetched((prev) => {
+          const next = { ...prev };
+          for (const p of json.products as Product[]) {
+            if (p && typeof p.slug === "string") next[p.slug] = p;
+          }
+          return next;
+        });
+      })
+      .catch(() => {
+        /* offline or API down — mock fallback still applies */
+      })
+      .finally(() => {
+        unique.forEach((s) => fetchingRef.current.delete(s));
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lines]);
 
   useEffect(() => {
     try {
@@ -88,13 +144,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     let c = 0;
     let s = 0;
     for (const l of lines) {
-      const p = getProduct(l.slug);
+      const p = fetched[l.slug] ?? getProduct(l.slug);
       if (!p) continue;
       c += l.qty;
       s += p.price * l.qty;
     }
     return { count: c, subtotal: s };
-  }, [lines]);
+  }, [lines, fetched]);
 
   const value = useMemo(
     () => ({
@@ -107,8 +163,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
       subtotal,
       isOpen,
       setOpen,
+      resolveProduct,
     }),
-    [lines, addItem, removeItem, setQty, clear, count, subtotal, isOpen]
+    [
+      lines,
+      addItem,
+      removeItem,
+      setQty,
+      clear,
+      count,
+      subtotal,
+      isOpen,
+      resolveProduct,
+    ]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

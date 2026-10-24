@@ -18,6 +18,10 @@ export function isValidSlug(raw: string): boolean {
   return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(raw);
 }
 
+export const MAX_PRODUCT_IMAGES = 3;
+/** Max encoded size per photo (~1.5 MB of base64 ≈ 1.1 MB of image bytes). */
+const MAX_IMAGE_LENGTH = 1_500_000;
+
 export interface ProductInput {
   name: string;
   slug: string;
@@ -30,6 +34,7 @@ export interface ProductInput {
   rating: number;
   description: string;
   details: string[];
+  images: string[];
 }
 
 const VALID_BADGES = ["best-selling", "new"] as const;
@@ -101,10 +106,44 @@ export function validateProductInput(body: unknown): {
     details = detailsRaw.split("\n").map((d) => d.trim()).filter(Boolean).slice(0, 20);
   }
 
+  const { images, errors: imageErrors } = validateImages(b.images);
+  errors.push(...imageErrors);
+
   return {
-    data: { name, slug, categorySlug, price, oldPrice, unit, stock, badge, rating, description, details },
+    data: { name, slug, categorySlug, price, oldPrice, unit, stock, badge, rating, description, details, images },
     errors,
   };
+}
+
+/**
+ * Validate the product photo list. Accepts data-URLs produced by the admin
+ * uploader (client-side compressed JPEGs) or plain https URLs.
+ */
+export function validateImages(raw: unknown): { images: string[]; errors: string[] } {
+  const errors: string[] = [];
+  if (raw === undefined || raw === null || raw === "") return { images: [], errors };
+  if (!Array.isArray(raw)) {
+    return { images: [], errors: ["Photos must be sent as a list."] };
+  }
+  if (raw.length > MAX_PRODUCT_IMAGES) {
+    errors.push(`At most ${MAX_PRODUCT_IMAGES} photos per product.`);
+  }
+  const images: string[] = [];
+  for (const item of raw.slice(0, MAX_PRODUCT_IMAGES)) {
+    const s = String(item ?? "").trim();
+    const isDataUrl = /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(s);
+    const isHttpUrl = /^https?:\/\/[^\s]+$/i.test(s) && s.length <= 2000;
+    if (!isDataUrl && !isHttpUrl) {
+      errors.push("Each photo must be an uploaded image or an http(s) URL.");
+      continue;
+    }
+    if (s.length > MAX_IMAGE_LENGTH) {
+      errors.push("One photo is too large — please use a smaller image.");
+      continue;
+    }
+    images.push(s);
+  }
+  return { images, errors };
 }
 
 export interface CategoryInput {

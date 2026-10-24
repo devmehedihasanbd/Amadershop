@@ -59,6 +59,11 @@ const columns: Column<ProductRow>[] = [
       <span>
         <span className="block font-medium text-stone-900">{p.name}</span>
         <span className="block text-xs text-stone-400">{p.slug}</span>
+        {p.images.length > 0 && (
+          <span className="mt-0.5 inline-block text-xs text-stone-500">
+            📷 {p.images.length} photo{p.images.length === 1 ? "" : "s"}
+          </span>
+        )}
       </span>
     ),
   },
@@ -108,6 +113,11 @@ function ProductCard({ product: p }: { product: ProductRow }) {
         <div className="min-w-0">
           <p className="truncate font-semibold text-stone-900">{p.name}</p>
           <p className="truncate text-xs text-stone-400">{p.slug}</p>
+          {p.images.length > 0 && (
+            <p className="mt-0.5 text-xs text-stone-500">
+              📷 {p.images.length} photo{p.images.length === 1 ? "" : "s"}
+            </p>
+          )}
         </div>
         {p.badge && (
           <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">

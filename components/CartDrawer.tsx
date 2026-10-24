@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
-import { formatPrice, getProduct } from "@/lib/products";
+import { formatPrice } from "@/lib/products";
 import ProductImage from "./ProductImage";
 
 export default function CartDrawer() {
-  const { isOpen, setOpen, lines, setQty, removeItem, subtotal } = useCart();
+  const { isOpen, setOpen, lines, setQty, removeItem, subtotal, resolveProduct } =
+    useCart();
 
   return (
     <div
@@ -57,13 +58,14 @@ export default function CartDrawer() {
           ) : (
             <ul className="space-y-4">
               {lines.map((line) => {
-                const p = getProduct(line.slug);
+                const p = resolveProduct(line.slug);
                 if (!p) return null;
                 return (
                   <li key={line.slug} className="flex gap-3">
                     <ProductImage
                       category={p.category}
                       name={p.name}
+                      images={p.images}
                       className="h-16 w-16 shrink-0 rounded-xl"
                     />
                     <div className="flex flex-1 flex-col">
