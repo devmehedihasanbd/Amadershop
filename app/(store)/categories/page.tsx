@@ -4,11 +4,16 @@ import SectionHeader from "@/components/SectionHeader";
 import Reveal from "@/components/Reveal";
 import { getCategories } from "@/lib/catalog";
 
+
 export const metadata: Metadata = {
   title: "Shop by Category — Amader Shop",
   description:
     "Browse all grocery categories at Amader Shop: honey, dates, spices, oils & ghee, rice & lentils, nuts and organic specials.",
 };
+
+// Always render fresh from the live DB: admin changes must show
+// immediately, with no build-time static cache in the way.
+export const dynamic = "force-dynamic";
 
 export default async function CategoriesPage() {
   const categories = await getCategories();

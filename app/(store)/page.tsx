@@ -10,6 +10,7 @@ import Testimonials from "@/components/Testimonials";
 import SectionHeader from "@/components/SectionHeader";
 import Reveal from "@/components/Reveal";
 import {
+
   getCategoriesWithDetails,
   getBestSellers,
   getNewArrivals,
@@ -70,6 +71,10 @@ const MARQUEE_ITEMS = [
   "Flat 10% off your first order — code AMADER10",
   "Fresh stock every week",
 ];
+
+// Always render fresh from the live DB: admin changes must show
+// immediately, with no build-time static cache in the way.
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const [categories, bestSellers, newArrivals, topRated, flashSale] =

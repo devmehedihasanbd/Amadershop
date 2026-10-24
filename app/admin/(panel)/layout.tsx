@@ -8,7 +8,6 @@ export const metadata: Metadata = {
 };
 
 // Allow blocking dynamic access (auth + DB) instead of failing the prerender.
-export const instant = false;
 
 export default async function AdminPanelLayout({
   children,

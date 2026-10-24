@@ -4,6 +4,7 @@ import { getProduct, getProducts, getRelatedProducts } from "@/lib/catalog";
 import ProductCard from "@/components/ProductCard";
 import ProductDetail from "./ProductDetail";
 
+
 export async function generateStaticParams() {
   const products = await getProducts();
   return products.map((p) => ({ slug: p.slug }));
@@ -20,6 +21,10 @@ export async function generateMetadata({
     title: product ? `${product.name} — Amader Shop` : "Product — Amader Shop",
   };
 }
+
+// Always render fresh from the live DB: admin changes must show
+// immediately, with no build-time static cache in the way.
+export const dynamic = "force-dynamic";
 
 export default async function ProductPage({
   params,

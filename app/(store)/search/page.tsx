@@ -2,7 +2,6 @@ import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 import { getProducts } from "@/lib/catalog";
 
-export const instant = false;
 
 export default async function SearchPage({
   searchParams,

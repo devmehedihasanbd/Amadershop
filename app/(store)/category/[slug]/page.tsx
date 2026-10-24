@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getCategories, getCategory, getProducts } from "@/lib/catalog";
 import CategoryView from "./CategoryView";
 
+
 export async function generateStaticParams() {
   const categories = await getCategories();
   return categories.map((c) => ({ slug: c.slug }));
@@ -19,6 +20,10 @@ export async function generateMetadata({
     title: category ? `${category.name} — Amader Shop` : "Category — Amader Shop",
   };
 }
+
+// Always render fresh from the live DB: admin changes must show
+// immediately, with no build-time static cache in the way.
+export const dynamic = "force-dynamic";
 
 export default async function CategoryPage({
   params,
