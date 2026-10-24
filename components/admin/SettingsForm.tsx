@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Panel, inputClass, labelClass, primaryBtnClass } from "./ui";
 
 export default function SettingsForm({
   initial,
@@ -44,12 +45,12 @@ export default function SettingsForm({
     }
   }
 
-  const inputCls =
-    "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none focus:border-green-700 focus:ring-2 focus:ring-green-700/20";
-  const labelCls = "mb-1 block text-sm font-medium text-stone-700";
+  const inputCls = inputClass;
+  const labelCls = labelClass;
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-xl space-y-4 rounded-xl bg-white p-5 shadow-sm">
+    <Panel title="Store settings">
+    <form onSubmit={handleSubmit} className="max-w-xl space-y-4">
       {error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
       )}
@@ -113,10 +114,11 @@ export default function SettingsForm({
       <button
         type="submit"
         disabled={loading}
-        className="rounded-lg bg-green-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-800 disabled:opacity-50"
+        className={primaryBtnClass}
       >
         {loading ? "Saving…" : "Save settings"}
       </button>
     </form>
+    </Panel>
   );
 }

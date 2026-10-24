@@ -1,16 +1,13 @@
 import { getDb } from "@/lib/db";
 import { DEFAULT_SETTINGS } from "@/lib/settings";
 import SettingsForm from "@/components/admin/SettingsForm";
+import { EmptyState, PageHeader } from "@/components/admin/ui";
 
 
 export default async function AdminSettingsPage() {
   const db = getDb();
   if (!db) {
-    return (
-      <div className="rounded-xl bg-white p-8 text-center shadow-sm">
-        <p className="font-medium text-stone-700">Database not configured.</p>
-      </div>
-    );
+    return <EmptyState message="Database not configured." />;
   }
 
   const rows = await db.setting.findMany();
@@ -18,7 +15,7 @@ export default async function AdminSettingsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-stone-900">Settings</h1>
+      <PageHeader subtitle="Storefront preferences. Changes apply to the live store immediately." />
       <SettingsForm
         initial={{
           announcement: map.get("announcement") ?? DEFAULT_SETTINGS.announcement,
@@ -29,8 +26,8 @@ export default async function AdminSettingsPage() {
             String(DEFAULT_SETTINGS.freeDeliveryThreshold),
         }}
       />
-      <div className="max-w-xl rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
-        <p className="font-medium">Note</p>
+      <div className="max-w-xl rounded-xl bg-amber-50 p-4 text-sm text-amber-800 ring-1 ring-inset ring-amber-200">
+        <p className="font-semibold">Note</p>
         <p className="mt-1">
           The admin password is set via the <code className="font-mono">ADMIN_PASSWORD</code>{" "}
           environment variable and cannot be changed here.

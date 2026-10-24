@@ -1,21 +1,102 @@
 import Link from "next/link";
 import { getDb } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
-
+import {
+  DataTable,
+  EmptyState,
+  PageHeader,
+  StatusPill,
+  formatTk,
+  inputClass,
+  primaryBtnClass,
+  type Column,
+} from "@/components/admin/ui";
 
 const TABS = ["All", "PENDING", "CONFIRMED", "PACKED", "SHIPPED", "DELIVERED", "CANCELLED"] as const;
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: "bg-amber-100 text-amber-800",
-  CONFIRMED: "bg-blue-100 text-blue-800",
-  PACKED: "bg-violet-100 text-violet-800",
-  SHIPPED: "bg-cyan-100 text-cyan-800",
-  DELIVERED: "bg-green-100 text-green-800",
-  CANCELLED: "bg-red-100 text-red-700",
-};
+type OrderRow = Prisma.OrderGetPayload<{
+  include: {
+    customer: { select: { name: true; phone: true } };
+    _count: { select: { items: true } };
+  };
+}>;
 
-function formatTk(n: number): string {
-  return `৳${n.toLocaleString("en-US")}`;
+function formatDate(d: Date): string {
+  return new Date(d).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+const columns: Column<OrderRow>[] = [
+  {
+    header: "Order",
+    render: (o) => (
+      <Link
+        href={`/admin/orders/${o.id}`}
+        className="font-semibold text-green-700 hover:underline"
+      >
+        {o.orderNumber}
+      </Link>
+    ),
+  },
+  {
+    header: "Date",
+    render: (o) => <span className="text-stone-500">{formatDate(o.createdAt)}</span>,
+  },
+  {
+    header: "Customer",
+    render: (o) => (
+      <span>
+        <span className="block font-medium text-stone-900">{o.customer.name}</span>
+        <span className="block text-xs text-stone-500">{o.customer.phone}</span>
+      </span>
+    ),
+  },
+  {
+    header: "Items",
+    align: "right",
+    render: (o) => <span className="text-stone-500">{o._count.items}</span>,
+  },
+  {
+    header: "Total",
+    align: "right",
+    render: (o) => <span className="font-semibold text-stone-900">{formatTk(o.total)}</span>,
+  },
+  {
+    header: "Payment",
+    render: (o) => <span className="text-stone-500">{o.paymentMethod}</span>,
+  },
+  {
+    header: "Status",
+    align: "right",
+    render: (o) => <StatusPill status={o.status} />,
+  },
+];
+
+function OrderCard({ order: o }: { order: OrderRow }) {
+  return (
+    <Link href={`/admin/orders/${o.id}`} className="block">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-semibold text-green-700">{o.orderNumber}</span>
+        <StatusPill status={o.status} />
+      </div>
+      <div className="mt-2 space-y-1 text-sm">
+        <p className="font-medium text-stone-900">
+          {o.customer.name} <span className="font-normal text-stone-500">· {o.customer.phone}</span>
+        </p>
+        <p className="text-xs text-stone-500">{formatDate(o.createdAt)}</p>
+      </div>
+      <div className="mt-3 flex items-center justify-between border-t border-stone-100 pt-3 text-sm">
+        <span className="text-stone-500">
+          {o._count.items} items · {o.paymentMethod}
+        </span>
+        <span className="text-base font-bold text-stone-900">{formatTk(o.total)}</span>
+      </div>
+    </Link>
+  );
 }
 
 export default async function AdminOrdersPage({
@@ -29,11 +110,7 @@ export default async function AdminOrdersPage({
 
   const db = getDb();
   if (!db) {
-    return (
-      <div className="rounded-xl bg-white p-8 text-center shadow-sm">
-        <p className="font-medium text-stone-700">Database not configured.</p>
-      </div>
-    );
+    return <EmptyState message="Database not configured." />;
   }
 
   const where: Prisma.OrderWhereInput = {};
@@ -68,7 +145,9 @@ export default async function AdminOrdersPage({
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-stone-900">Orders</h1>
+      <PageHeader
+        subtitle={`${orders.length} order${orders.length === 1 ? "" : "s"}`}
+      />
 
       {/* Search */}
       <form method="GET" className="flex gap-2">
@@ -77,28 +156,25 @@ export default async function AdminOrdersPage({
           name="q"
           defaultValue={q}
           placeholder="Search order number or phone…"
-          className="w-full max-w-sm rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-700/20"
+          className={`${inputClass} max-w-sm`}
         />
-        <button
-          type="submit"
-          className="rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800"
-        >
+        <button type="submit" className={primaryBtnClass}>
           Search
         </button>
       </form>
 
       {/* Status tabs */}
-      <div className="no-scrollbar flex gap-2 overflow-x-auto">
+      <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         {TABS.map((tab) => {
           const active = status === tab.toUpperCase();
           return (
             <Link
               key={tab}
               href={tabHref(tab)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition ${
+              className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
                 active
-                  ? "bg-green-700 text-white"
-                  : "bg-white text-stone-600 hover:bg-stone-200"
+                  ? "bg-stone-900 text-white"
+                  : "bg-white text-stone-600 ring-1 ring-inset ring-stone-200 hover:bg-stone-100"
               }`}
             >
               {tab === "All" ? "All" : tab.charAt(0) + tab.slice(1).toLowerCase()}
@@ -107,67 +183,13 @@ export default async function AdminOrdersPage({
         })}
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl bg-white p-5 shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-stone-200 text-xs uppercase text-stone-500">
-                <th className="py-2 pr-3">Order</th>
-                <th className="py-2 pr-3">Date</th>
-                <th className="py-2 pr-3">Customer</th>
-                <th className="py-2 pr-3">Items</th>
-                <th className="py-2 pr-3 text-right">Total</th>
-                <th className="py-2 pr-3">Payment</th>
-                <th className="py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((o) => (
-                <tr key={o.id} className="border-b border-stone-100 last:border-0">
-                  <td className="py-2.5 pr-3">
-                    <Link
-                      href={`/admin/orders/${o.id}`}
-                      className="font-medium text-green-700 hover:underline"
-                    >
-                      {o.orderNumber}
-                    </Link>
-                  </td>
-                  <td className="py-2.5 pr-3 text-stone-500">
-                    {new Date(o.createdAt).toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </td>
-                  <td className="py-2.5 pr-3">
-                    <div>{o.customer.name}</div>
-                    <div className="text-xs text-stone-500">{o.customer.phone}</div>
-                  </td>
-                  <td className="py-2.5 pr-3 text-stone-500">{o._count.items}</td>
-                  <td className="py-2.5 pr-3 text-right font-semibold">{formatTk(o.total)}</td>
-                  <td className="py-2.5 pr-3 text-stone-500">{o.paymentMethod}</td>
-                  <td className="py-2.5">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[o.status] ?? "bg-stone-100 text-stone-600"}`}
-                    >
-                      {o.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {orders.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="py-6 text-center text-stone-500">
-                    No orders found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DataTable
+        columns={columns}
+        data={orders}
+        keyOf={(o) => o.id}
+        renderCard={(o) => <OrderCard order={o} />}
+        emptyMessage="No orders found."
+      />
     </div>
   );
 }

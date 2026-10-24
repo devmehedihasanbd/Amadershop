@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Panel, inputClass, labelClass, primaryBtnClass, secondaryBtnClass } from "./ui";
 
 export interface ProductFormData {
   name: string;
@@ -78,12 +79,12 @@ export default function ProductForm({
     }
   }
 
-  const inputCls =
-    "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none focus:border-green-700 focus:ring-2 focus:ring-green-700/20";
-  const labelCls = "mb-1 block text-sm font-medium text-stone-700";
+  const inputCls = inputClass;
+  const labelCls = labelClass;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-xl bg-white p-5 shadow-sm">
+    <Panel title={productId ? "Edit product" : "New product"}>
+    <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
           <p className="font-medium">{error}</p>
@@ -159,18 +160,19 @@ export default function ProductForm({
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-green-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-800 disabled:opacity-50"
+          className={primaryBtnClass}
         >
           {loading ? "Saving…" : productId ? "Save changes" : "Create product"}
         </button>
         <button
           type="button"
           onClick={() => router.push("/admin/products")}
-          className="rounded-lg border border-stone-300 px-5 py-2.5 text-sm font-semibold text-stone-700 hover:bg-stone-100"
+          className={secondaryBtnClass}
         >
           Cancel
         </button>
       </div>
     </form>
+    </Panel>
   );
 }

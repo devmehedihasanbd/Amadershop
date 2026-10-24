@@ -2,10 +2,138 @@ import Link from "next/link";
 import { getDb } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
 import DeleteButton from "@/components/admin/DeleteButton";
+import {
+  DataTable,
+  EmptyState,
+  PageHeader,
+  formatTk,
+  inputClass,
+  primaryBtnClass,
+  type Column,
+} from "@/components/admin/ui";
 
+type ProductRow = Prisma.ProductGetPayload<{
+  include: { category: { select: { slug: true; name: true } } };
+}>;
 
-function formatTk(n: number): string {
-  return `৳${n.toLocaleString("en-US")}`;
+function StockBadge({ stock }: { stock: number }) {
+  const low = stock < 10;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 font-semibold ${
+        low ? "text-red-600" : "text-stone-700"
+      }`}
+    >
+      {stock}
+      {low && (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" />
+        </svg>
+      )}
+    </span>
+  );
+}
+
+function ProductActions({ product: p }: { product: ProductRow }) {
+  return (
+    <div className="flex justify-end gap-2">
+      <Link
+        href={`/admin/products/${p.id}/edit`}
+        className="rounded-lg border border-stone-300 px-2.5 py-1.5 text-xs font-semibold text-stone-700 transition hover:bg-stone-100"
+      >
+        Edit
+      </Link>
+      <DeleteButton
+        url={`/api/admin/products/${p.id}`}
+        label="Delete"
+        confirmMessage={`Delete "${p.name}"?`}
+      />
+    </div>
+  );
+}
+
+const columns: Column<ProductRow>[] = [
+  {
+    header: "Name",
+    render: (p) => (
+      <span>
+        <span className="block font-medium text-stone-900">{p.name}</span>
+        <span className="block text-xs text-stone-400">{p.slug}</span>
+      </span>
+    ),
+  },
+  {
+    header: "Category",
+    render: (p) => <span className="text-stone-500">{p.category.name}</span>,
+  },
+  {
+    header: "Price",
+    align: "right",
+    render: (p) => <span className="font-semibold text-stone-900">{formatTk(p.price)}</span>,
+  },
+  {
+    header: "Old price",
+    align: "right",
+    render: (p) => (
+      <span className="text-stone-400">{p.oldPrice ? formatTk(p.oldPrice) : "—"}</span>
+    ),
+  },
+  {
+    header: "Stock",
+    align: "right",
+    render: (p) => <StockBadge stock={p.stock} />,
+  },
+  {
+    header: "Badge",
+    render: (p) =>
+      p.badge ? (
+        <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+          {p.badge}
+        </span>
+      ) : (
+        <span className="text-stone-300">—</span>
+      ),
+  },
+  {
+    header: "Actions",
+    align: "right",
+    render: (p) => <ProductActions product={p} />,
+  },
+];
+
+function ProductCard({ product: p }: { product: ProductRow }) {
+  return (
+    <div>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-stone-900">{p.name}</p>
+          <p className="truncate text-xs text-stone-400">{p.slug}</p>
+        </div>
+        {p.badge && (
+          <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+            {p.badge}
+          </span>
+        )}
+      </div>
+      <div className="mt-3 flex items-center justify-between text-sm">
+        <span className="text-stone-500">{p.category.name}</span>
+        <span className="font-bold text-stone-900">
+          {formatTk(p.price)}{" "}
+          {p.oldPrice && (
+            <span className="font-normal text-stone-400 line-through">
+              {formatTk(p.oldPrice)}
+            </span>
+          )}
+        </span>
+      </div>
+      <div className="mt-3 flex items-center justify-between border-t border-stone-100 pt-3">
+        <span className="text-sm">
+          Stock: <StockBadge stock={p.stock} />
+        </span>
+        <ProductActions product={p} />
+      </div>
+    </div>
+  );
 }
 
 export default async function AdminProductsPage({
@@ -19,11 +147,7 @@ export default async function AdminProductsPage({
 
   const db = getDb();
   if (!db) {
-    return (
-      <div className="rounded-xl bg-white p-8 text-center shadow-sm">
-        <p className="font-medium text-stone-700">Database not configured.</p>
-      </div>
-    );
+    return <EmptyState message="Database not configured." />;
   }
 
   const [categories, products] = await Promise.all([
@@ -48,15 +172,14 @@ export default async function AdminProductsPage({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-stone-900">Products</h1>
-        <Link
-          href="/admin/products/new"
-          className="rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800"
-        >
-          + New product
-        </Link>
-      </div>
+      <PageHeader
+        subtitle={`${products.length} product${products.length === 1 ? "" : "s"}`}
+        actions={
+          <Link href="/admin/products/new" className={primaryBtnClass}>
+            + New product
+          </Link>
+        }
+      />
 
       {/* Filters */}
       <form method="GET" className="flex flex-wrap gap-2">
@@ -64,12 +187,12 @@ export default async function AdminProductsPage({
           name="q"
           defaultValue={q}
           placeholder="Search name or slug…"
-          className="w-full max-w-xs rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-700/20"
+          className={`${inputClass} w-full max-w-xs flex-1 sm:flex-none`}
         />
         <select
           name="category"
           defaultValue={category}
-          className="rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-green-700"
+          className={`${inputClass} w-auto`}
         >
           <option value="">All categories</option>
           {categories.map((c) => (
@@ -78,84 +201,18 @@ export default async function AdminProductsPage({
             </option>
           ))}
         </select>
-        <button
-          type="submit"
-          className="rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800"
-        >
+        <button type="submit" className={primaryBtnClass}>
           Filter
         </button>
       </form>
 
-      {/* Table */}
-      <div className="rounded-xl bg-white p-5 shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-stone-200 text-xs uppercase text-stone-500">
-                <th className="py-2 pr-3">Name</th>
-                <th className="py-2 pr-3">Category</th>
-                <th className="py-2 pr-3 text-right">Price</th>
-                <th className="py-2 pr-3 text-right">Old price</th>
-                <th className="py-2 pr-3 text-right">Stock</th>
-                <th className="py-2 pr-3">Badge</th>
-                <th className="py-2 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((p) => (
-                <tr key={p.id} className="border-b border-stone-100 last:border-0">
-                  <td className="py-2.5 pr-3">
-                    <div className="font-medium text-stone-900">{p.name}</div>
-                    <div className="text-xs text-stone-400">{p.slug}</div>
-                  </td>
-                  <td className="py-2.5 pr-3 text-stone-500">{p.category.name}</td>
-                  <td className="py-2.5 pr-3 text-right font-semibold">{formatTk(p.price)}</td>
-                  <td className="py-2.5 pr-3 text-right text-stone-400">
-                    {p.oldPrice ? formatTk(p.oldPrice) : "—"}
-                  </td>
-                  <td
-                    className={`py-2.5 pr-3 text-right font-semibold ${p.stock < 10 ? "text-red-600" : "text-stone-700"}`}
-                  >
-                    {p.stock}
-                    {p.stock < 10 && <span className="ml-1 text-xs">⚠</span>}
-                  </td>
-                  <td className="py-2.5 pr-3">
-                    {p.badge ? (
-                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
-                        {p.badge}
-                      </span>
-                    ) : (
-                      <span className="text-stone-300">—</span>
-                    )}
-                  </td>
-                  <td className="py-2.5 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Link
-                        href={`/admin/products/${p.id}/edit`}
-                        className="rounded-lg border border-stone-300 px-2.5 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-100"
-                      >
-                        Edit
-                      </Link>
-                      <DeleteButton
-                        url={`/api/admin/products/${p.id}`}
-                        label="Delete"
-                        confirmMessage={`Delete "${p.name}"?`}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {products.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="py-6 text-center text-stone-500">
-                    No products found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DataTable
+        columns={columns}
+        data={products}
+        keyOf={(p) => p.id}
+        renderCard={(p) => <ProductCard product={p} />}
+        emptyMessage="No products found."
+      />
     </div>
   );
 }

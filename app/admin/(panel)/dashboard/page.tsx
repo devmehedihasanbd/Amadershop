@@ -1,30 +1,107 @@
 import Link from "next/link";
 import { getDb } from "@/lib/db";
+import {
+  DataTable,
+  EmptyState,
+  PageHeader,
+  Panel,
+  StatusPill,
+  formatTk,
+  type Column,
+} from "@/components/admin/ui";
 
+type RecentOrder = {
+  id: string;
+  orderNumber: string;
+  createdAt: Date;
+  total: number;
+  status: string;
+  customer: { name: string };
+  _count: { items: number };
+};
 
-function formatTk(n: number): string {
-  return `৳${n.toLocaleString("en-US")}`;
+function KpiIcon({ d }: { d: string }) {
+  return (
+    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-100 text-green-700">
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d={d} />
+      </svg>
+    </span>
+  );
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: "bg-amber-100 text-amber-800",
-  CONFIRMED: "bg-blue-100 text-blue-800",
-  PACKED: "bg-violet-100 text-violet-800",
-  SHIPPED: "bg-cyan-100 text-cyan-800",
-  DELIVERED: "bg-green-100 text-green-800",
-  CANCELLED: "bg-red-100 text-red-700",
-};
+const orderColumns: Column<RecentOrder>[] = [
+  {
+    header: "Order",
+    render: (o) => (
+      <Link
+        href={`/admin/orders/${o.id}`}
+        className="font-semibold text-green-700 hover:underline"
+      >
+        {o.orderNumber}
+      </Link>
+    ),
+  },
+  {
+    header: "Date",
+    render: (o) => (
+      <span className="text-stone-500">
+        {new Date(o.createdAt).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+        })}
+      </span>
+    ),
+  },
+  {
+    header: "Customer",
+    render: (o) => <span className="text-stone-700">{o.customer.name}</span>,
+  },
+  {
+    header: "Items",
+    align: "right",
+    render: (o) => <span className="text-stone-500">{o._count.items}</span>,
+  },
+  {
+    header: "Total",
+    align: "right",
+    render: (o) => <span className="font-semibold text-stone-900">{formatTk(o.total)}</span>,
+  },
+  {
+    header: "Status",
+    align: "right",
+    render: (o) => <StatusPill status={o.status} />,
+  },
+];
+
+function OrderCard({ order: o }: { order: RecentOrder }) {
+  return (
+    <Link href={`/admin/orders/${o.id}`} className="block">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-semibold text-green-700">{o.orderNumber}</span>
+        <StatusPill status={o.status} />
+      </div>
+      <div className="mt-2 flex items-center justify-between text-sm">
+        <span className="text-stone-600">
+          {o.customer.name} · {o._count.items} items
+        </span>
+        <span className="font-bold text-stone-900">{formatTk(o.total)}</span>
+      </div>
+      <p className="mt-1 text-xs text-stone-400">
+        {new Date(o.createdAt).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+        })}
+      </p>
+    </Link>
+  );
+}
 
 export default async function AdminDashboardPage() {
   const db = getDb();
   if (!db) {
     return (
-      <div className="rounded-xl bg-white p-8 text-center shadow-sm">
-        <p className="font-medium text-stone-700">Database not configured.</p>
-        <p className="mt-1 text-sm text-stone-500">
-          Set DATABASE_URL to use the admin panel.
-        </p>
-      </div>
+      <EmptyState message="Database not configured. Set DATABASE_URL to use the admin panel." />
     );
   }
 
@@ -90,70 +167,123 @@ export default async function AdminDashboardPage() {
     if (idx >= 0 && idx < 7) days[idx].total += o.total;
   }
   const maxDay = Math.max(1, ...days.map((d) => d.total));
+  const weekTotal = days.reduce((s, d) => s + d.total, 0);
 
   const stats = [
-    { label: "Total revenue", value: formatTk(revenueAgg._sum.total ?? 0), accent: true },
-    { label: "Orders", value: String(orderCount) },
-    { label: "Pending orders", value: String(pendingCount) },
-    { label: "Products", value: String(productCount) },
-    { label: "Customers", value: String(customerCount) },
-    { label: "Low stock (<10)", value: String(lowStockCount) },
+    {
+      label: "Total revenue",
+      value: formatTk(revenueAgg._sum.total ?? 0),
+      trend: `${formatTk(weekTotal)} this week`,
+      icon: "M12 2v20m5-17H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6",
+      accent: true,
+    },
+    {
+      label: "Orders",
+      value: String(orderCount),
+      trend: `${pendingCount} awaiting action`,
+      icon: "M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",
+    },
+    {
+      label: "Pending orders",
+      value: String(pendingCount),
+      trend: "Need confirmation",
+      icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
+    },
+    {
+      label: "Products",
+      value: String(productCount),
+      trend: `${lowStockCount} low on stock`,
+      icon: "M20 7l-8-4-8 4v10l8 4 8-4zM12 3v8m0 0l8-4m-8 4L4 7m8 12v-8",
+    },
+    {
+      label: "Customers",
+      value: String(customerCount),
+      trend: "Total registered",
+      icon: "M16 19v-1a4 4 0 00-4-4H7a4 4 0 00-4 4v1m18 0v-1a4 4 0 00-3-3.87M13 3.13a4 4 0 010 7.75M13 7a4 4 0 11-8 0 4 4 0 018 0z",
+    },
+    {
+      label: "Low stock",
+      value: String(lowStockCount),
+      trend: "Below 10 units",
+      icon: "M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z",
+    },
   ];
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-stone-900">Dashboard</h1>
+      <PageHeader subtitle="Here's what's happening across your store today." />
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         {stats.map((s) => (
           <div
             key={s.label}
-            className={`rounded-xl p-4 shadow-sm ${
-              s.accent ? "bg-green-700 text-white" : "bg-white"
+            className={`rounded-xl border p-4 transition ${
+              s.accent
+                ? "border-green-700 bg-green-700 text-white"
+                : "border-stone-200 bg-white"
             }`}
           >
+            <div className="flex items-center justify-between">
+              {s.accent ? (
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-white">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d={s.icon} />
+                  </svg>
+                </span>
+              ) : (
+                <KpiIcon d={s.icon} />
+              )}
+            </div>
+            <p className={`mt-3 text-2xl font-extrabold tracking-tight ${s.accent ? "text-white" : "text-stone-900"}`}>
+              {s.value}
+            </p>
             <p className={`text-xs font-medium ${s.accent ? "text-green-100" : "text-stone-500"}`}>
               {s.label}
             </p>
-            <p className={`mt-1 text-2xl font-extrabold ${s.accent ? "text-white" : "text-stone-900"}`}>
-              {s.value}
+            <p className={`mt-1 text-[11px] ${s.accent ? "text-green-200" : "text-stone-400"}`}>
+              {s.trend}
             </p>
           </div>
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         {/* 7-day revenue chart */}
-        <div className="rounded-xl bg-white p-5 shadow-sm">
-          <h2 className="mb-4 font-semibold text-stone-900">Revenue — last 7 days</h2>
-          <div className="flex h-40 items-end gap-2">
+        <Panel title="Revenue — last 7 days">
+          <div className="flex h-44 items-end gap-2 sm:gap-3">
             {days.map((d) => (
-              <div key={d.label} className="flex flex-1 flex-col items-center gap-1">
-                <span className="text-[10px] font-medium text-stone-500">
-                  {d.total > 0 ? `৳${d.total >= 1000 ? `${(d.total / 1000).toFixed(1)}k` : d.total}` : ""}
+              <div key={d.label} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
+                <span className="text-[10px] font-semibold text-stone-500">
+                  {d.total > 0
+                    ? `৳${d.total >= 1000 ? `${(d.total / 1000).toFixed(1)}k` : d.total}`
+                    : ""}
                 </span>
                 <div
-                  className="w-full rounded-t bg-green-600"
-                  style={{ height: `${Math.max(4, (d.total / maxDay) * 100)}%` }}
+                  className="w-full max-w-10 rounded-t-md bg-gradient-to-t from-green-700 to-green-500"
+                  style={{ height: `${Math.max(3, (d.total / maxDay) * 100)}%` }}
                   title={`${d.label}: ৳${d.total.toLocaleString()}`}
                 />
                 <span className="text-xs text-stone-500">{d.label}</span>
               </div>
             ))}
           </div>
-        </div>
+        </Panel>
 
         {/* Top products */}
-        <div className="rounded-xl bg-white p-5 shadow-sm">
-          <h2 className="mb-4 font-semibold text-stone-900">Top products by quantity sold</h2>
+        <Panel title="Top products by quantity sold">
           {topProducts.length === 0 ? (
             <p className="text-sm text-stone-500">No sales yet.</p>
           ) : (
             <ul className="space-y-3">
-              {topProducts.map((p) => (
-                <li key={p.productName} className="flex items-center justify-between gap-3">
-                  <span className="truncate text-sm text-stone-700">{p.productName}</span>
+              {topProducts.map((p, i) => (
+                <li key={p.productName} className="flex items-center gap-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-xs font-bold text-stone-600">
+                    {i + 1}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-stone-700">
+                    {p.productName}
+                  </span>
                   <span className="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-800">
                     {p._sum.qty ?? 0} sold
                   </span>
@@ -161,69 +291,26 @@ export default async function AdminDashboardPage() {
               ))}
             </ul>
           )}
-        </div>
+        </Panel>
       </div>
 
       {/* Recent orders */}
-      <div className="rounded-xl bg-white p-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-semibold text-stone-900">Recent orders</h2>
-          <Link href="/admin/orders" className="text-sm font-medium text-green-700 hover:underline">
+      <Panel
+        title="Recent orders"
+        action={
+          <Link href="/admin/orders" className="text-sm font-semibold text-green-700 hover:underline">
             View all →
           </Link>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-stone-200 text-xs uppercase text-stone-500">
-                <th className="py-2 pr-3">Order</th>
-                <th className="py-2 pr-3">Date</th>
-                <th className="py-2 pr-3">Customer</th>
-                <th className="py-2 pr-3">Items</th>
-                <th className="py-2 pr-3 text-right">Total</th>
-                <th className="py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentOrders.map((o) => (
-                <tr key={o.id} className="border-b border-stone-100 last:border-0">
-                  <td className="py-2.5 pr-3">
-                    <Link
-                      href={`/admin/orders/${o.id}`}
-                      className="font-medium text-green-700 hover:underline"
-                    >
-                      {o.orderNumber}
-                    </Link>
-                  </td>
-                  <td className="py-2.5 pr-3 text-stone-500">
-                    {new Date(o.createdAt).toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                    })}
-                  </td>
-                  <td className="py-2.5 pr-3">{o.customer.name}</td>
-                  <td className="py-2.5 pr-3 text-stone-500">{o._count.items}</td>
-                  <td className="py-2.5 pr-3 text-right font-semibold">{formatTk(o.total)}</td>
-                  <td className="py-2.5">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[o.status] ?? "bg-stone-100 text-stone-600"}`}
-                    >
-                      {o.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {recentOrders.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="py-6 text-center text-stone-500">
-                    No orders yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        }
+      >
+        <DataTable
+          columns={orderColumns}
+          data={recentOrders}
+          keyOf={(o) => o.id}
+          renderCard={(o) => <OrderCard order={o} />}
+          emptyMessage="No orders yet."
+        />
+      </Panel>
     </div>
   );
 }

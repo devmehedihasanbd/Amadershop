@@ -1,11 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
-import AnnouncementBar from "@/components/AnnouncementBar";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import CartDrawer from "@/components/CartDrawer";
-import BottomTabBar from "@/components/BottomTabBar";
 
 export const metadata: Metadata = {
   title: "Amader Shop — খাঁটি দেশি পণ্য, ঘরে বসে",
@@ -35,6 +30,10 @@ export const viewport: Viewport = {
   themeColor: "#166534",
 };
 
+// NOTE: this root layout intentionally renders NO storefront chrome.
+// Storefront chrome (header, footer, tab bar, cart drawer) lives in
+// app/(store)/layout.tsx so the admin panel (/admin/*) stays visually
+// isolated like Shopify's admin.
 export default function RootLayout({
   children,
 }: {
@@ -42,15 +41,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-stone-50 pb-[calc(4.5rem+env(safe-area-inset-bottom))] text-stone-800 antialiased md:pb-0">
-        <CartProvider>
-          <AnnouncementBar />
-          <Header />
-          <main className="min-h-[60vh]">{children}</main>
-          <Footer />
-          <CartDrawer />
-          <BottomTabBar />
-        </CartProvider>
+      <body className="bg-stone-50 text-stone-800 antialiased">
+        <CartProvider>{children}</CartProvider>
       </body>
     </html>
   );

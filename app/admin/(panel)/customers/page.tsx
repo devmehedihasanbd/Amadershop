@@ -1,9 +1,78 @@
 import { getDb } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
+import {
+  DataTable,
+  EmptyState,
+  PageHeader,
+  formatTk,
+  inputClass,
+  primaryBtnClass,
+  type Column,
+} from "@/components/admin/ui";
 
+type CustomerRow = Prisma.CustomerGetPayload<{
+  include: {
+    _count: { select: { orders: true } };
+    orders: { select: { total: true; status: true } };
+  };
+}>;
 
-function formatTk(n: number): string {
-  return `৳${n.toLocaleString("en-US")}`;
+function spentOf(c: CustomerRow): number {
+  return c.orders
+    .filter((o) => o.status !== "CANCELLED")
+    .reduce((s, o) => s + o.total, 0);
+}
+
+const columns: Column<CustomerRow>[] = [
+  {
+    header: "Name",
+    render: (c) => <span className="font-medium text-stone-900">{c.name}</span>,
+  },
+  {
+    header: "Phone",
+    render: (c) => <span className="text-stone-600">{c.phone}</span>,
+  },
+  {
+    header: "Address",
+    render: (c) => (
+      <span className="text-stone-500">
+        {c.address}, {c.area}
+      </span>
+    ),
+  },
+  {
+    header: "Orders",
+    align: "right",
+    render: (c) => <span className="text-stone-600">{c._count.orders}</span>,
+  },
+  {
+    header: "Total spent",
+    align: "right",
+    render: (c) => <span className="font-semibold text-stone-900">{formatTk(spentOf(c))}</span>,
+  },
+];
+
+function CustomerCard({ customer: c }: { customer: CustomerRow }) {
+  return (
+    <div>
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-800">
+          {c.name.charAt(0).toUpperCase()}
+        </span>
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-stone-900">{c.name}</p>
+          <p className="truncate text-xs text-stone-500">{c.phone}</p>
+        </div>
+      </div>
+      <p className="mt-2 truncate text-sm text-stone-500">
+        {c.address}, {c.area}
+      </p>
+      <div className="mt-3 flex items-center justify-between border-t border-stone-100 pt-3 text-sm">
+        <span className="text-stone-500">{c._count.orders} orders</span>
+        <span className="font-bold text-stone-900">{formatTk(spentOf(c))}</span>
+      </div>
+    </div>
+  );
 }
 
 export default async function AdminCustomersPage({
@@ -16,11 +85,7 @@ export default async function AdminCustomersPage({
 
   const db = getDb();
   if (!db) {
-    return (
-      <div className="rounded-xl bg-white p-8 text-center shadow-sm">
-        <p className="font-medium text-stone-700">Database not configured.</p>
-      </div>
-    );
+    return <EmptyState message="Database not configured." />;
   }
 
   const where: Prisma.CustomerWhereInput = {};
@@ -43,63 +108,29 @@ export default async function AdminCustomersPage({
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-stone-900">Customers</h1>
+      <PageHeader
+        subtitle={`${customers.length} customer${customers.length === 1 ? "" : "s"}`}
+      />
 
       <form method="GET" className="flex gap-2">
         <input
           name="q"
           defaultValue={q}
           placeholder="Search name or phone…"
-          className="w-full max-w-sm rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-700/20"
+          className={`${inputClass} max-w-sm`}
         />
-        <button
-          type="submit"
-          className="rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800"
-        >
+        <button type="submit" className={primaryBtnClass}>
           Search
         </button>
       </form>
 
-      <div className="rounded-xl bg-white p-5 shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-stone-200 text-xs uppercase text-stone-500">
-                <th className="py-2 pr-3">Name</th>
-                <th className="py-2 pr-3">Phone</th>
-                <th className="py-2 pr-3">Address</th>
-                <th className="py-2 pr-3 text-right">Orders</th>
-                <th className="py-2 text-right">Total spent</th>
-              </tr>
-            </thead>
-            <tbody>
-              {customers.map((c) => {
-                const spent = c.orders
-                  .filter((o) => o.status !== "CANCELLED")
-                  .reduce((s, o) => s + o.total, 0);
-                return (
-                  <tr key={c.id} className="border-b border-stone-100 last:border-0">
-                    <td className="py-2.5 pr-3 font-medium text-stone-900">{c.name}</td>
-                    <td className="py-2.5 pr-3 text-stone-600">{c.phone}</td>
-                    <td className="py-2.5 pr-3 text-stone-500">
-                      {c.address}, {c.area}
-                    </td>
-                    <td className="py-2.5 pr-3 text-right">{c._count.orders}</td>
-                    <td className="py-2.5 text-right font-semibold">{formatTk(spent)}</td>
-                  </tr>
-                );
-              })}
-              {customers.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-6 text-center text-stone-500">
-                    No customers found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DataTable
+        columns={columns}
+        data={customers}
+        keyOf={(c) => c.id}
+        renderCard={(c) => <CustomerCard customer={c} />}
+        emptyMessage="No customers found."
+      />
     </div>
   );
 }

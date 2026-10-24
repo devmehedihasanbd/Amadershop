@@ -3,6 +3,17 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DeleteButton from "./DeleteButton";
+import {
+  DataTable,
+  PageHeader,
+  Panel,
+  formatTk,
+  inputClass,
+  labelClass,
+  primaryBtnClass,
+  secondaryBtnClass,
+  type Column,
+} from "./ui";
 
 export interface PromoRow {
   id: string;
@@ -14,6 +25,32 @@ export interface PromoRow {
 }
 
 const EMPTY = { code: "", percent: "10", minOrder: "0", maxDiscount: "0", active: true };
+
+function ActiveToggle({
+  promo: p,
+  onToggle,
+}: {
+  promo: PromoRow;
+  onToggle: (p: PromoRow) => void;
+}) {
+  return (
+    <button
+      onClick={() => onToggle(p)}
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+        p.active ? "bg-green-600" : "bg-stone-300"
+      }`}
+      role="switch"
+      aria-checked={p.active}
+      aria-label={`Toggle ${p.code}`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${
+          p.active ? "translate-x-6" : "translate-x-1"
+        }`}
+      />
+    </button>
+  );
+}
 
 export default function PromoManager({ initial }: { initial: PromoRow[] }) {
   const router = useRouter();
@@ -101,138 +138,184 @@ export default function PromoManager({ initial }: { initial: PromoRow[] }) {
     }
   }
 
-  const inputCls =
-    "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none focus:border-green-700 focus:ring-2 focus:ring-green-700/20";
-  const labelCls = "mb-1 block text-xs font-medium text-stone-600";
+  function PromoActions({ promo: p }: { promo: PromoRow }) {
+    return (
+      <div className="flex items-center justify-end gap-2">
+        <ActiveToggle promo={p} onToggle={toggleActive} />
+        <button
+          onClick={() => startEdit(p)}
+          className="rounded-lg border border-stone-300 px-2.5 py-1.5 text-xs font-semibold text-stone-700 transition hover:bg-stone-100"
+        >
+          Edit
+        </button>
+        <DeleteButton
+          url={`/api/admin/promos/${p.id}`}
+          label="Delete"
+          confirmMessage={`Delete promo "${p.code}"?`}
+        />
+      </div>
+    );
+  }
+
+  function PromoCard({ promo: p }: { promo: PromoRow }) {
+    return (
+      <div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="rounded-md bg-stone-900 px-2.5 py-1 font-mono text-sm font-bold tracking-wide text-white">
+            {p.code}
+          </span>
+          <ActiveToggle promo={p} onToggle={toggleActive} />
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-lg bg-stone-50 px-2 py-2">
+            <p className="text-base font-bold text-stone-900">{p.percent}%</p>
+            <p className="text-[10px] uppercase text-stone-500">Off</p>
+          </div>
+          <div className="rounded-lg bg-stone-50 px-2 py-2">
+            <p className="text-base font-bold text-stone-900">{formatTk(p.minOrder)}</p>
+            <p className="text-[10px] uppercase text-stone-500">Min order</p>
+          </div>
+          <div className="rounded-lg bg-stone-50 px-2 py-2">
+            <p className="text-base font-bold text-stone-900">{formatTk(p.maxDiscount)}</p>
+            <p className="text-[10px] uppercase text-stone-500">Max off</p>
+          </div>
+        </div>
+        <div className="mt-3 flex justify-end border-t border-stone-100 pt-3">
+          <PromoActions promo={p} />
+        </div>
+      </div>
+    );
+  }
+
+  const columns: Column<PromoRow>[] = [
+    {
+      header: "Code",
+      render: (p) => (
+        <span className="rounded-md bg-stone-900 px-2.5 py-1 font-mono text-xs font-bold tracking-wide text-white">
+          {p.code}
+        </span>
+      ),
+    },
+    {
+      header: "% off",
+      align: "right",
+      render: (p) => <span className="font-semibold text-stone-900">{p.percent}%</span>,
+    },
+    {
+      header: "Min order",
+      align: "right",
+      render: (p) => <span className="text-stone-500">{formatTk(p.minOrder)}</span>,
+    },
+    {
+      header: "Max discount",
+      align: "right",
+      render: (p) => <span className="text-stone-500">{formatTk(p.maxDiscount)}</span>,
+    },
+    {
+      header: "Active",
+      render: (p) => <ActiveToggle promo={p} onToggle={toggleActive} />,
+    },
+    {
+      header: "Actions",
+      align: "right",
+      render: (p) => <PromoActions promo={p} />,
+    },
+  ];
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-stone-900">Promo codes</h1>
-        <button
-          onClick={startCreate}
-          className="rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800"
-        >
-          + New promo
-        </button>
-      </div>
+      <PageHeader
+        subtitle={`${initial.length} promo code${initial.length === 1 ? "" : "s"}`}
+        actions={
+          <button onClick={startCreate} className={primaryBtnClass}>
+            + New promo
+          </button>
+        }
+      />
 
       {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+        <p className="rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 ring-1 ring-inset ring-red-200">
+          {error}
+        </p>
       )}
 
       {editingId && (
-        <form onSubmit={handleSubmit} className="rounded-xl bg-white p-5 shadow-sm">
-          <h2 className="mb-3 font-semibold text-stone-900">
-            {editingId === "new" ? "New promo" : "Edit promo"}
-          </h2>
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
-            <div>
-              <label className={labelCls}>Code *</label>
-              <input className={inputCls} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} placeholder="EID20" required />
-            </div>
-            <div>
-              <label className={labelCls}>Percent off * (1–90)</label>
-              <input type="number" min="1" max="90" className={inputCls} value={form.percent} onChange={(e) => setForm({ ...form, percent: e.target.value })} required />
-            </div>
-            <div>
-              <label className={labelCls}>Min order (৳)</label>
-              <input type="number" min="0" className={inputCls} value={form.minOrder} onChange={(e) => setForm({ ...form, minOrder: e.target.value })} />
-            </div>
-            <div>
-              <label className={labelCls}>Max discount (৳)</label>
-              <input type="number" min="0" className={inputCls} value={form.maxDiscount} onChange={(e) => setForm({ ...form, maxDiscount: e.target.value })} />
-            </div>
-            <div className="flex items-end pb-2">
-              <label className="flex items-center gap-2 text-sm text-stone-700">
+        <Panel title={editingId === "new" ? "New promo code" : "Edit promo code"}>
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <div>
+                <label className={labelClass}>Code *</label>
                 <input
-                  type="checkbox"
-                  checked={form.active}
-                  onChange={(e) => setForm({ ...form, active: e.target.checked })}
-                  className="h-4 w-4 accent-green-700"
+                  className={`${inputClass} font-mono uppercase`}
+                  value={form.code}
+                  onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+                  placeholder="EID20"
+                  required
                 />
-                Active
-              </label>
+              </div>
+              <div>
+                <label className={labelClass}>Percent off * (1–90)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="90"
+                  className={inputClass}
+                  value={form.percent}
+                  onChange={(e) => setForm({ ...form, percent: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Min order (৳)</label>
+                <input
+                  type="number"
+                  min="0"
+                  className={inputClass}
+                  value={form.minOrder}
+                  onChange={(e) => setForm({ ...form, minOrder: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Max discount (৳)</label>
+                <input
+                  type="number"
+                  min="0"
+                  className={inputClass}
+                  value={form.maxDiscount}
+                  onChange={(e) => setForm({ ...form, maxDiscount: e.target.value })}
+                />
+              </div>
+              <div className="flex items-end pb-2.5">
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-stone-700">
+                  <input
+                    type="checkbox"
+                    checked={form.active}
+                    onChange={(e) => setForm({ ...form, active: e.target.checked })}
+                    className="h-4 w-4 accent-green-700"
+                  />
+                  Active
+                </label>
+              </div>
             </div>
-          </div>
-          <div className="mt-3 flex gap-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800 disabled:opacity-50"
-            >
-              {loading ? "Saving…" : "Save"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditingId(null)}
-              className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-100"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+            <div className="mt-4 flex gap-2">
+              <button type="submit" disabled={loading} className={primaryBtnClass}>
+                {loading ? "Saving…" : "Save promo"}
+              </button>
+              <button type="button" onClick={() => setEditingId(null)} className={secondaryBtnClass}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Panel>
       )}
 
-      <div className="rounded-xl bg-white p-5 shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-stone-200 text-xs uppercase text-stone-500">
-                <th className="py-2 pr-3">Code</th>
-                <th className="py-2 pr-3 text-right">% off</th>
-                <th className="py-2 pr-3 text-right">Min order</th>
-                <th className="py-2 pr-3 text-right">Max discount</th>
-                <th className="py-2 pr-3">Active</th>
-                <th className="py-2 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {initial.map((p) => (
-                <tr key={p.id} className="border-b border-stone-100 last:border-0">
-                  <td className="py-2.5 pr-3 font-mono font-bold text-stone-900">{p.code}</td>
-                  <td className="py-2.5 pr-3 text-right">{p.percent}%</td>
-                  <td className="py-2.5 pr-3 text-right text-stone-500">৳{p.minOrder.toLocaleString()}</td>
-                  <td className="py-2.5 pr-3 text-right text-stone-500">৳{p.maxDiscount.toLocaleString()}</td>
-                  <td className="py-2.5 pr-3">
-                    <button
-                      onClick={() => toggleActive(p)}
-                      className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        p.active ? "bg-green-100 text-green-800" : "bg-stone-200 text-stone-500"
-                      }`}
-                      title="Toggle active"
-                    >
-                      {p.active ? "ON" : "OFF"}
-                    </button>
-                  </td>
-                  <td className="py-2.5 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => startEdit(p)}
-                        className="rounded-lg border border-stone-300 px-2.5 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-100"
-                      >
-                        Edit
-                      </button>
-                      <DeleteButton
-                        url={`/api/admin/promos/${p.id}`}
-                        label="Delete"
-                        confirmMessage={`Delete promo "${p.code}"?`}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {initial.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="py-6 text-center text-stone-500">
-                    No promo codes yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DataTable
+        columns={columns}
+        data={initial}
+        keyOf={(p) => p.id}
+        renderCard={(p) => <PromoCard promo={p} />}
+        emptyMessage="No promo codes yet."
+      />
     </div>
   );
 }

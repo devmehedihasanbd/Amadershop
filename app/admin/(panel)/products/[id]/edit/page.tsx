@@ -53,7 +53,6 @@ export default async function AdminProductEditPage({
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-stone-900">Edit product</h1>
       <ProductForm initial={initial} categories={categories} productId={product.id} />
     </div>
   );
