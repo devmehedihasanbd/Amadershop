@@ -8,21 +8,49 @@ import { formatPrice } from "@/lib/products";
 import ProductImage from "@/components/ProductImage";
 import { DELIVERY_CHARGE, FREE_DELIVERY_THRESHOLD } from "../cart/page";
 import { applyPromo, normalizePromoCode } from "@/lib/promos";
+import {
+  DISTRICTS,
+  UPAZILAS_BY_DISTRICT,
+  ALL_UPAZILAS,
+} from "@/lib/bd-locations";
 
-const DHAKA_AREAS = [
-  "Dhanmondi",
-  "Mirpur",
-  "Uttara",
-  "Gulshan",
-  "Banani",
-  "Mohammadpur",
-  "Wari",
-  "Jatrabari",
-  "Bashundhara",
-  "Savar",
-  "Narayanganj",
-  "Keraniganj",
-];
+/* ------------------- district / upazila auto-detect ------------------- */
+/* Matches a typed upazila name in the free-text address field and        */
+/* returns its district + upazila, so the selects fill themselves.        */
+/* Ambiguous matches (same upazila name in several districts with no     */
+/* district name in the text) are left for manual selection.              */
+
+function normalizeText(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/['']/g, "")
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function detectLocation(
+  text: string
+): { district: string; upazila: string } | null {
+  const hay = ` ${normalizeText(text)} `;
+  if (hay.trim().length < 3) return null;
+  const candidates = ALL_UPAZILAS.filter(({ upazila }) => {
+    const n = normalizeText(upazila);
+    return n.length >= 3 && hay.includes(` ${n} `);
+  });
+  if (candidates.length === 0) return null;
+  if (candidates.length === 1) return candidates[0];
+  const withDistrict = candidates.filter(({ district }) =>
+    hay.includes(` ${normalizeText(district)} `)
+  );
+  if (withDistrict.length === 1) return withDistrict[0];
+  if (withDistrict.length > 1) {
+    return [...withDistrict].sort(
+      (a, b) => b.upazila.length - a.upazila.length
+    )[0];
+  }
+  return null;
+}
 
 type PaymentMethod = "cod" | "bkash" | "nagad" | "rocket";
 
@@ -63,7 +91,35 @@ export default function CheckoutPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
-  const [area, setArea] = useState(DHAKA_AREAS[0]);
+  const [district, setDistrict] = useState("Dhaka");
+  const [upazila, setUpazila] = useState("");
+  const [locationTouched, setLocationTouched] = useState(false);
+
+  const upazilas = UPAZILAS_BY_DISTRICT[district] ?? [];
+
+  /* Auto-detect district + upazila from the typed address, until the
+     customer manually picks from the dropdowns. */
+  function handleAddressChange(value: string) {
+    setAddress(value);
+    if (!locationTouched) {
+      const found = detectLocation(value);
+      if (found) {
+        setDistrict(found.district);
+        setUpazila(found.upazila);
+      }
+    }
+  }
+
+  function handleDistrictChange(value: string) {
+    setDistrict(value);
+    setUpazila("");
+    setLocationTouched(true);
+  }
+
+  function handleUpazilaChange(value: string) {
+    setUpazila(value);
+    setLocationTouched(true);
+  }
   const [payment, setPayment] = useState<PaymentMethod>("cod");
   const [payMethods, setPayMethods] = useState<PayMethod[]>(FALLBACK_METHODS);
   const [promoInput, setPromoInput] = useState("");
@@ -131,6 +187,10 @@ export default function CheckoutPage() {
       setError("Your cart is empty.");
       return;
     }
+    if (!upazila) {
+      setError("Please select your upazila.");
+      return;
+    }
 
     setPlacing(true);
     try {
@@ -142,7 +202,7 @@ export default function CheckoutPage() {
             name: name.trim(),
             phone: phone.replace(/[\s-]/g, ""),
             address: address.trim(),
-            area,
+            area: upazila ? `${upazila}, ${district}` : district,
           },
           items: lines.map((l) => ({ slug: l.slug, qty: l.qty })),
           paymentMethod: method.toUpperCase(),
@@ -243,7 +303,7 @@ export default function CheckoutPage() {
             <div className="flex justify-between">
               <dt className="text-stone-500">Deliver to</dt>
               <dd className="text-right font-semibold">
-                {area}
+                {upazila ? `${upazila}, ${district}` : district}
                 <br />
                 <span className="font-normal text-stone-500">{phone}</span>
               </dd>
@@ -337,24 +397,43 @@ export default function CheckoutPage() {
                 </span>
                 <textarea
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="House, road, area…"
+                  onChange={(e) => handleAddressChange(e.target.value)}
+                  placeholder="House, road, area… (type your upazila name and it will auto-select below)"
                   rows={3}
                   className={inputCls}
                 />
               </label>
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-stone-600">
-                  Area
+                  District *
                 </span>
                 <select
-                  value={area}
-                  onChange={(e) => setArea(e.target.value)}
+                  value={district}
+                  onChange={(e) => handleDistrictChange(e.target.value)}
                   className={inputCls}
                 >
-                  {DHAKA_AREAS.map((a) => (
-                    <option key={a} value={a}>
-                      {a}
+                  {DISTRICTS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-stone-600">
+                  Upazila *
+                </span>
+                <select
+                  value={upazila}
+                  onChange={(e) => handleUpazilaChange(e.target.value)}
+                  className={inputCls}
+                >
+                  <option value="" disabled>
+                    Select upazila
+                  </option>
+                  {upazilas.map((u) => (
+                    <option key={u} value={u}>
+                      {u}
                     </option>
                   ))}
                 </select>
