@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin-auth";
 import { requireDb } from "@/lib/admin-db";
+import { revalidateStorefront } from "@/lib/revalidate";
 import {
   MANAGED_SECRET_KEYS,
   MANAGED_TOGGLE_KEYS,
@@ -110,5 +111,6 @@ export async function PUT(request: Request) {
     });
   }
 
+  revalidateStorefront();
   return NextResponse.json({ ok: true });
 }

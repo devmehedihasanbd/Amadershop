@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { requireAdminApi } from "@/lib/admin-auth";
 import { requireDb } from "@/lib/admin-db";
+import { revalidateStorefront } from "@/lib/revalidate";
 import { validateBannerInput } from "@/lib/admin-validation";
 
 function toPlacement(value: "hero" | "offer"): Prisma.BannerCreateInput["placement"] {
@@ -64,6 +65,7 @@ export async function PATCH(
         active: data.active,
       },
     });
+    revalidateStorefront();
     return NextResponse.json({ banner });
   } catch {
     return NextResponse.json({ error: "Banner not found." }, { status: 404 });
@@ -83,6 +85,7 @@ export async function DELETE(
 
   try {
     await db.banner.delete({ where: { id } });
+    revalidateStorefront();
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Banner not found." }, { status: 404 });

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin-auth";
 import { requireDb } from "@/lib/admin-db";
+import { revalidateStorefront } from "@/lib/revalidate";
 import { slugify, validateCategoryInput } from "@/lib/admin-validation";
 
 export async function PATCH(
@@ -45,6 +46,7 @@ export async function PATCH(
         sortOrder: data.sortOrder,
       },
     });
+    revalidateStorefront();
     return NextResponse.json({ category });
   } catch {
     return NextResponse.json({ error: "Category not found." }, { status: 404 });
@@ -74,6 +76,7 @@ export async function DELETE(
 
   try {
     await db.category.delete({ where: { id } });
+    revalidateStorefront();
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Category not found." }, { status: 404 });

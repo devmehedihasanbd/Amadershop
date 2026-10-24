@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin-auth";
 import { requireDb } from "@/lib/admin-db";
+import { revalidateStorefront } from "@/lib/revalidate";
 import { getSettings } from "@/lib/settings";
 import { validateOneImage } from "@/lib/admin-validation";
 
@@ -152,6 +153,7 @@ export async function PUT(request: Request) {
   }
 
   const s = await getSettings();
+  revalidateStorefront();
   return NextResponse.json({
     settings: {
       announcement: s.announcement,

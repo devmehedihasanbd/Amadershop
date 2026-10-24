@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin-auth";
 import { requireDb } from "@/lib/admin-db";
+import { revalidateStorefront } from "@/lib/revalidate";
 import { validatePromoInput } from "@/lib/admin-validation";
 
 export async function PATCH(
@@ -39,6 +40,7 @@ export async function PATCH(
 
   try {
     const promo = await db.promo.update({ where: { id }, data });
+    revalidateStorefront();
     return NextResponse.json({ promo });
   } catch {
     return NextResponse.json({ error: "Promo not found." }, { status: 404 });
@@ -58,6 +60,7 @@ export async function DELETE(
 
   try {
     await db.promo.delete({ where: { id } });
+    revalidateStorefront();
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Promo not found." }, { status: 404 });

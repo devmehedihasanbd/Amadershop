@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin-auth";
 import { requireDb } from "@/lib/admin-db";
+import { revalidateStorefront } from "@/lib/revalidate";
 import { slugify, validateCategoryInput } from "@/lib/admin-validation";
 
 export async function GET() {
@@ -62,5 +63,6 @@ export async function POST(request: Request) {
       sortOrder: data.sortOrder,
     },
   });
+  revalidateStorefront();
   return NextResponse.json({ category }, { status: 201 });
 }

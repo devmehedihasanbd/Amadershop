@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin-auth";
 import { requireDb } from "@/lib/admin-db";
+import { revalidateStorefront } from "@/lib/revalidate";
 import { slugify, validateProductInput } from "@/lib/admin-validation";
 
 export async function GET(
@@ -82,6 +83,7 @@ export async function PATCH(
         categoryId: category.id,
       },
     });
+    revalidateStorefront();
     return NextResponse.json({ product });
   } catch {
     return NextResponse.json({ error: "Product not found." }, { status: 404 });
@@ -112,6 +114,7 @@ export async function DELETE(
 
   try {
     await db.product.delete({ where: { id } });
+    revalidateStorefront();
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Product not found." }, { status: 404 });

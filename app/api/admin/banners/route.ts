@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { requireAdminApi } from "@/lib/admin-auth";
 import { requireDb } from "@/lib/admin-db";
+import { revalidateStorefront } from "@/lib/revalidate";
 import { validateBannerInput } from "@/lib/admin-validation";
 
 function toPlacement(value: "hero" | "offer"): Prisma.BannerCreateInput["placement"] {
@@ -53,5 +54,6 @@ export async function POST(request: Request) {
       active: data.active,
     },
   });
+  revalidateStorefront();
   return NextResponse.json({ banner }, { status: 201 });
 }

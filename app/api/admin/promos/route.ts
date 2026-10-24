@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin-auth";
 import { requireDb } from "@/lib/admin-db";
+import { revalidateStorefront } from "@/lib/revalidate";
 import { validatePromoInput } from "@/lib/admin-validation";
 
 export async function GET() {
@@ -45,5 +46,6 @@ export async function POST(request: Request) {
   }
 
   const promo = await db.promo.create({ data });
+  revalidateStorefront();
   return NextResponse.json({ promo }, { status: 201 });
 }

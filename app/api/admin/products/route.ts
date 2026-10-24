@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { requireAdminApi } from "@/lib/admin-auth";
 import { requireDb } from "@/lib/admin-db";
+import { revalidateStorefront } from "@/lib/revalidate";
 import { slugify, validateProductInput } from "@/lib/admin-validation";
 
 export async function GET(request: Request) {
@@ -100,5 +101,6 @@ export async function POST(request: Request) {
       categoryId: category.id,
     },
   });
+  revalidateStorefront();
   return NextResponse.json({ product }, { status: 201 });
 }
