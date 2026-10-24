@@ -35,10 +35,14 @@ export async function POST(request: Request) {
       join(process.cwd(), "prisma", "migrations", MIGRATION_NAME, "migration.sql"),
       "utf8"
     );
-    const statements = migrationFile
-      .split(/;\s*\n/)
+    const cleaned = migrationFile
+      .split("\n")
+      .filter((line) => !line.trim().startsWith("--"))
+      .join("\n");
+    const statements = cleaned
+      .split(";")
       .map((s) => s.trim())
-      .filter((s) => s.length > 0 && !s.startsWith("--"));
+      .filter((s) => s.length > 0);
     for (const stmt of statements) {
       // CREATE TYPE is not idempotent; skip it when the type already exists.
       if (/^CREATE TYPE/i.test(stmt)) {
