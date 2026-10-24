@@ -10,3 +10,5 @@ import { revalidatePath } from "next/cache";
 export function revalidateStorefront() {
   revalidatePath("/", "layout");
 }
+// Note: revalidation runs after every admin mutation (products,
+// categories, banners, promos, settings, payments).
