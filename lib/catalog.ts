@@ -35,7 +35,7 @@ interface DbProductRow {
   reviewsCount: number;
   badge: string | null;
   images: unknown;
-  category: { slug: string };
+  category: { slug: string } | null;
 }
 
 function toBadge(value: string | null): Badge {
@@ -52,7 +52,8 @@ function toProduct(row: DbProductRow): Product {
   return {
     slug: row.slug,
     name: row.name,
-    category: row.category.slug,
+    // Category is optional now: uncategorized products carry "".
+    category: row.category?.slug ?? "",
     price: row.price,
     oldPrice: row.oldPrice ?? undefined,
     unit: row.unit,
@@ -104,6 +105,7 @@ export async function getCategories(): Promise<Category[]> {
           slug: r.slug,
           name: r.name,
           tagline: r.description ?? "",
+          ...(r.image ? { image: r.image } : {}),
         }));
       }
     } catch {
@@ -318,7 +320,13 @@ export async function getCategoriesWithDetails(): Promise<CategoryWithDetails[]>
             name: r.name,
             tagline: r.description ?? "",
             productCount: r._count.products,
-            ...(imgs.length > 0 ? { image: imgs[0] } : {}),
+            // The category's own photo wins; otherwise fall back to the
+            // first product's photo, then to the letter placeholder.
+            ...(r.image
+              ? { image: r.image }
+              : imgs.length > 0
+                ? { image: imgs[0] }
+                : {}),
           };
         });
       }
@@ -338,7 +346,7 @@ type DbRow = {
   slug: string; name: string; description: string; details: unknown;
   price: number; oldPrice: number | null; unit: string; rating: number;
   reviewsCount: number; badge: string | null; images: unknown;
-  category: { slug: string };
+  category: { slug: string } | null;
 };
 
 function mapRows(rows: DbRow[]): Product[] {

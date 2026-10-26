@@ -47,11 +47,14 @@ export default async function AdminProductEditPage({
       ? (product.images as unknown[]).filter((u): u is string => typeof u === "string")
       : [],
   };
-  // Resolve the actual category slug from the product's categoryId.
-  const cat = await db.category.findUnique({
-    where: { id: product.categoryId },
-    select: { slug: true },
-  });
+  // Resolve the actual category slug from the product's categoryId
+  // (null when the product has no category).
+  const cat = product.categoryId
+    ? await db.category.findUnique({
+        where: { id: product.categoryId },
+        select: { slug: true },
+      })
+    : null;
   initial.categorySlug = cat?.slug ?? "";
 
   return (

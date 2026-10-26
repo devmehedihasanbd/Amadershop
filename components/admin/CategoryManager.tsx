@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DeleteButton from "./DeleteButton";
+import ImageUploader from "./ImageUploader";
 import {
   DataTable,
   PageHeader,
@@ -19,6 +20,7 @@ export interface CategoryRow {
   slug: string;
   name: string;
   tagline: string;
+  image: string;
   sortOrder: number;
   productCount: number;
 }
@@ -26,7 +28,19 @@ export interface CategoryRow {
 const columns: Column<CategoryRow>[] = [
   {
     header: "Name",
-    render: (c) => <span className="font-medium text-stone-900">{c.name}</span>,
+    render: (c) => (
+      <span className="flex items-center gap-2.5">
+        {c.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={c.image}
+            alt=""
+            className="h-9 w-9 shrink-0 rounded-lg object-cover"
+          />
+        ) : null}
+        <span className="font-medium text-stone-900">{c.name}</span>
+      </span>
+    ),
   },
   {
     header: "Slug",
@@ -55,13 +69,13 @@ export default function CategoryManager({
 }) {
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", slug: "", tagline: "", sortOrder: "0" });
+  const [form, setForm] = useState({ name: "", slug: "", tagline: "", image: "", sortOrder: "0" });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   function startCreate() {
     setEditingId("new");
-    setForm({ name: "", slug: "", tagline: "", sortOrder: "0" });
+    setForm({ name: "", slug: "", tagline: "", image: "", sortOrder: "0" });
     setError(null);
   }
 
@@ -71,6 +85,7 @@ export default function CategoryManager({
       name: c.name,
       slug: c.slug,
       tagline: c.tagline,
+      image: c.image,
       sortOrder: String(c.sortOrder),
     });
     setError(null);
@@ -85,6 +100,7 @@ export default function CategoryManager({
         name: form.name,
         slug: form.slug,
         tagline: form.tagline,
+        image: form.image || null,
         sortOrder: Number(form.sortOrder),
       };
       const isNew = editingId === "new";
@@ -133,9 +149,19 @@ export default function CategoryManager({
     return (
       <div>
         <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="font-semibold text-stone-900">{c.name}</p>
-            <p className="truncate text-xs text-stone-400">{c.slug}</p>
+          <div className="flex min-w-0 items-start gap-3">
+            {c.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={c.image}
+                alt=""
+                className="h-12 w-12 shrink-0 rounded-xl object-cover"
+              />
+            ) : null}
+            <div className="min-w-0">
+              <p className="font-semibold text-stone-900">{c.name}</p>
+              <p className="truncate text-xs text-stone-400">{c.slug}</p>
+            </div>
           </div>
           <span className="shrink-0 rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-semibold text-stone-600">
             {c.productCount} products
@@ -216,6 +242,14 @@ export default function CategoryManager({
                   onChange={(e) => setForm({ ...form, sortOrder: e.target.value })}
                 />
               </div>
+            </div>
+            <div className="mt-4">
+              <ImageUploader
+                images={form.image ? [form.image] : []}
+                onChange={(imgs) => setForm({ ...form, image: imgs[0] ?? "" })}
+                max={1}
+                label="Category photo"
+              />
             </div>
             <div className="mt-4 flex gap-2">
               <button type="submit" disabled={loading} className={primaryBtnClass}>

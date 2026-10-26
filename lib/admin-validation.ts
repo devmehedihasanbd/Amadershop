@@ -54,8 +54,8 @@ export function validateProductInput(body: unknown): {
   const slug = rawSlug || slugify(name);
   if (!isValidSlug(slug)) errors.push("Slug may only contain lowercase letters, numbers and hyphens.");
 
+  // Category is optional: an empty slug means "No category".
   const categorySlug = String(b.categorySlug ?? b.category ?? "").trim();
-  if (!categorySlug) errors.push("Category is required.");
 
   const price = Number(b.price);
   if (!Number.isInteger(price) || price < 0 || price > 1000000) {
@@ -248,6 +248,7 @@ export interface CategoryInput {
   slug: string;
   tagline: string;
   sortOrder: number;
+  image: string | null;
 }
 
 export function validateCategoryInput(body: unknown): {
@@ -270,7 +271,12 @@ export function validateCategoryInput(body: unknown): {
     errors.push("Sort order must be a whole number (0 – 10,000).");
   }
 
-  return { data: { name, slug, tagline, sortOrder }, errors };
+  const imageRaw = String(b.image ?? "").trim();
+  const imageErr = validateOneImage(imageRaw);
+  if (imageErr) errors.push(imageErr);
+  const image = imageRaw || null;
+
+  return { data: { name, slug, tagline, sortOrder, image }, errors };
 }
 
 export interface PromoInput {

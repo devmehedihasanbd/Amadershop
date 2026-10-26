@@ -40,6 +40,10 @@ model Category {
   slug        String    @unique
   name        String
   description String?
+  // Category photo: compressed data-URL (or https URL), shown in the
+  // round category circles and the header menu. Optional — when empty
+  // the circle falls back to the category's first letter.
+  image       String?   @db.Text
   sortOrder   Int       @default(0)
   createdAt   DateTime  @default(now())
 
@@ -63,8 +67,9 @@ model Product {
   // first entry is the main photo. Kept in the DB (not the filesystem)
   // because serverless deployments have no persistent local disk.
   images       String[] @default([])
-  categoryId   String
-  category     Category @relation(fields: [categoryId], references: [id])
+  // Optional: a product may have no category (admin picks "No category").
+  categoryId   String?
+  category     Category? @relation(fields: [categoryId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

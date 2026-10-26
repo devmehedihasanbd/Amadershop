@@ -21,6 +21,7 @@ export async function GET() {
       slug: c.slug,
       name: c.name,
       tagline: c.description ?? "",
+      image: c.image ?? "",
       sortOrder: c.sortOrder,
       productCount: c._count.products,
     })),
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
       slug,
       name: data.name,
       description: data.tagline || null,
+      image: data.image,
       sortOrder: data.sortOrder,
     },
   });

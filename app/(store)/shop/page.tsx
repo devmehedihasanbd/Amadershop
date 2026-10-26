@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import ProductCard from "@/components/ProductCard";
+import CategoryCircles from "@/components/CategoryCircles";
+import type { CategoryWithDetails } from "@/lib/catalog";
 import type { Product } from "@/lib/products";
 
 type SortKey = "popular" | "price-asc" | "price-desc" | "rating";
@@ -13,15 +15,16 @@ const SORTS: { id: SortKey; label: string }[] = [
   { id: "rating", label: "Top rated" },
 ];
 
-/** Full catalog with category, price and sort filters. */
+/** Full catalog with price and sort filters; categories live above as
+    round-image circles (the old search box + category dropdown are gone). */
 export default function ShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<{ slug: string; name: string }[]>([]);
+  const [categories, setCategories] = useState<
+    { slug: string; name: string; tagline?: string; image?: string }[]
+  >([]);
   const [loading, setLoading] = useState(true);
-  const [cat, setCat] = useState("all");
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
   const [sort, setSort] = useState<SortKey>("popular");
-  const [query, setQuery] = useState("");
   const [onSale, setOnSale] = useState(false);
 
   useEffect(() => {
@@ -49,13 +52,23 @@ export default function ShopPage() {
     [products]
   );
 
+  // Round-image category options, with live product counts.
+  const circleCategories: CategoryWithDetails[] = useMemo(
+    () =>
+      categories.map((c) => ({
+        slug: c.slug,
+        name: c.name,
+        tagline: c.tagline ?? "",
+        productCount: products.filter((p) => p.category === c.slug).length,
+        ...(c.image ? { image: c.image } : {}),
+      })),
+    [categories, products]
+  );
+
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
     let list = products.filter((p) => {
-      if (cat !== "all" && p.category !== cat) return false;
       if (maxPrice !== null && p.price > maxPrice) return false;
       if (onSale && !p.oldPrice) return false;
-      if (q && !`${p.name} ${p.short ?? ""}`.toLowerCase().includes(q)) return false;
       return true;
     });
     switch (sort) {
@@ -72,7 +85,7 @@ export default function ShopPage() {
         list = [...list].sort((a, b) => b.reviews - a.reviews);
     }
     return list;
-  }, [products, cat, maxPrice, sort, query, onSale]);
+  }, [products, maxPrice, sort, onSale]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
@@ -83,36 +96,15 @@ export default function ShopPage() {
         {loading ? "Loading…" : `${filtered.length} of ${products.length} products`}
       </p>
 
+      {/* Round-image categories (replaces the old search + category filters) */}
+      {!loading && circleCategories.length > 0 && (
+        <div className="mt-6">
+          <CategoryCircles categories={circleCategories} />
+        </div>
+      )}
+
       {/* Filters */}
-      <div className="mt-6 grid gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm md:grid-cols-2 lg:grid-cols-5">
-        <label className="block">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
-            Search
-          </span>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search products…"
-            className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm outline-none focus:border-green-600"
-          />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
-            Category
-          </span>
-          <select
-            value={cat}
-            onChange={(e) => setCat(e.target.value)}
-            className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-green-600"
-          >
-            <option value="all">All categories</option>
-            {categories.map((c) => (
-              <option key={c.slug} value={c.slug}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
+      <div className="mt-6 grid gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm md:grid-cols-2 lg:grid-cols-3">
         <label className="block">
           <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
             Max price {maxPrice !== null ? `(৳${maxPrice})` : "(any)"}
@@ -167,7 +159,7 @@ export default function ShopPage() {
         </div>
       ) : filtered.length === 0 ? (
         <p className="mt-12 text-center text-sm text-stone-500">
-          No products match these filters. Try widening your search.
+          No products match these filters.
         </p>
       ) : (
         <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">

@@ -68,11 +68,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid product.", details: errors }, { status: 400 });
   }
 
-  const category = await db.category.findUnique({
-    where: { slug: data.categorySlug },
-    select: { id: true },
-  });
-  if (!category) {
+  // Category is optional: an empty slug means "No category".
+  const category = data.categorySlug
+    ? await db.category.findUnique({
+        where: { slug: data.categorySlug },
+        select: { id: true },
+      })
+    : null;
+  if (data.categorySlug && !category) {
     return NextResponse.json({ error: "Category not found." }, { status: 400 });
   }
 
@@ -98,7 +101,7 @@ export async function POST(request: Request) {
       badge: data.badge,
       rating: data.rating,
       images: data.images,
-      categoryId: category.id,
+      categoryId: category?.id ?? null,
     },
   });
   revalidateStorefront();

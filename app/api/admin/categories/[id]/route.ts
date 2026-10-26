@@ -43,6 +43,7 @@ export async function PATCH(
         slug,
         name: data.name,
         description: data.tagline || null,
+        image: data.image,
         sortOrder: data.sortOrder,
       },
     });

@@ -7,6 +7,7 @@ export interface Category {
   slug: string;
   name: string;
   tagline: string;
+  image?: string;
 }
 
 export const categories: Category[] = [

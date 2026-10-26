@@ -121,9 +121,9 @@ export default function ProductForm({
           <input id="pf-slug" className={inputCls} value={form.slug} onChange={(e) => set("slug", e.target.value)} placeholder="e.g. wild-honey-1kg" />
         </div>
         <div>
-          <label className={labelCls} htmlFor="pf-category">Category *</label>
-          <select id="pf-category" className={inputCls} value={form.categorySlug} onChange={(e) => set("categorySlug", e.target.value)} required>
-            <option value="">Select category…</option>
+          <label className={labelCls} htmlFor="pf-category">Category (optional)</label>
+          <select id="pf-category" className={inputCls} value={form.categorySlug} onChange={(e) => set("categorySlug", e.target.value)}>
+            <option value="">No category</option>
             {categories.map((c) => (
               <option key={c.slug} value={c.slug}>{c.name}</option>
             ))}

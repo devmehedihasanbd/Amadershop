@@ -4,9 +4,8 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { categories } from "@/lib/products";
-import { useCart } from "@/context/CartContext";
 import { useSiteSettings } from "@/lib/use-site-settings";
+import HeaderMenu from "./HeaderMenu";
 
 function Logo() {
   const site = useSiteSettings();
@@ -55,7 +54,6 @@ function Logo() {
 }
 
 export default function Header() {
-  const { count, setOpen } = useCart();
   const router = useRouter();
   const [q, setQ] = useState("");
   const [scrolled, setScrolled] = useState(false);
@@ -122,47 +120,12 @@ export default function Header() {
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
           <Logo />
           <div className="hidden flex-1 md:block">{searchBox}</div>
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className="relative ml-auto flex items-center gap-2 rounded-full bg-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow transition hover:bg-green-700 md:ml-0"
-            aria-label={`Open cart, ${count} items`}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
-              <circle cx="9" cy="20" r="1.5" />
-              <circle cx="17" cy="20" r="1.5" />
-              <path d="M2 3h3l2.6 12.4a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.8L20.5 7H6" />
-            </svg>
-            <span className="hidden sm:inline">Cart</span>
-            {count > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[11px] font-bold text-white">
-                {count}
-              </span>
-            )}
-          </button>
+          {/* Three-dot menu: full menu + all categories live here now.
+              The top category nav line is gone; the cart stays reachable
+              from the bottom tab bar and from this menu. */}
+          <HeaderMenu />
         </div>
         <div className="px-4 pb-3 md:hidden">{searchBox}</div>
-
-        {/* nav */}
-        <nav className="border-t border-stone-100" aria-label="Categories">
-          <div className="no-scrollbar mx-auto flex max-w-7xl items-center gap-1 overflow-x-auto px-4">
-            <Link
-              href="/"
-              className="whitespace-nowrap px-3 py-3 text-sm font-medium text-stone-600 hover:text-green-700"
-            >
-              Home
-            </Link>
-            {categories.map((c) => (
-              <Link
-                key={c.slug}
-                href={`/category/${c.slug}`}
-                className="whitespace-nowrap px-3 py-3 text-sm font-medium text-stone-600 hover:text-green-700"
-              >
-                {c.name}
-              </Link>
-            ))}
-          </div>
-        </nav>
       </div>
     </header>
   );

@@ -144,13 +144,18 @@ export default function ProductDetail({ product }: { product: Product }) {
 
       <div>
         <p className="text-sm text-stone-500">
-          Home /{" "}
-          <Link
-            href={`/category/${product.category}`}
-            className="text-green-700 hover:underline"
-          >
-            {category?.name}
-          </Link>
+          Home
+          {product.category ? (
+            <>
+              {" / "}
+              <Link
+                href={`/category/${product.category}`}
+                className="text-green-700 hover:underline"
+              >
+                {category?.name}
+              </Link>
+            </>
+          ) : null}
         </p>
         <h1 className="mt-2 text-3xl font-extrabold text-stone-800">
           {product.name}

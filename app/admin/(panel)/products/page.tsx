@@ -69,7 +69,9 @@ const columns: Column<ProductRow>[] = [
   },
   {
     header: "Category",
-    render: (p) => <span className="text-stone-500">{p.category.name}</span>,
+    render: (p) => (
+      <span className="text-stone-500">{p.category?.name ?? "No category"}</span>
+    ),
   },
   {
     header: "Price",
@@ -126,7 +128,7 @@ function ProductCard({ product: p }: { product: ProductRow }) {
         )}
       </div>
       <div className="mt-3 flex items-center justify-between text-sm">
-        <span className="text-stone-500">{p.category.name}</span>
+        <span className="text-stone-500">{p.category?.name ?? "No category"}</span>
         <span className="font-bold text-stone-900">
           {formatTk(p.price)}{" "}
           {p.oldPrice && (

@@ -1,7 +1,6 @@
 import HeroSlider from "@/components/HeroSlider";
 import OfferBanners from "@/components/OfferBanners";
 import PromoPopup from "@/components/PromoPopup";
-import CategoryCircles from "@/components/CategoryCircles";
 import FlashSale from "@/components/FlashSale";
 import ProductTabs from "@/components/ProductTabs";
 import TrustBadges from "@/components/TrustBadges";
@@ -10,8 +9,6 @@ import Testimonials from "@/components/Testimonials";
 import SectionHeader from "@/components/SectionHeader";
 import Reveal from "@/components/Reveal";
 import {
-
-  getCategoriesWithDetails,
   getBestSellers,
   getNewArrivals,
   getTopRated,
@@ -77,14 +74,12 @@ const MARQUEE_ITEMS = [
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [categories, bestSellers, newArrivals, topRated, flashSale] =
-    await Promise.all([
-      getCategoriesWithDetails(),
-      getBestSellers(8),
-      getNewArrivals(8),
-      getTopRated(8),
-      getFlashSaleProducts(8),
-    ]);
+  const [bestSellers, newArrivals, topRated, flashSale] = await Promise.all([
+    getBestSellers(8),
+    getNewArrivals(8),
+    getTopRated(8),
+    getFlashSaleProducts(8),
+  ]);
 
   return (
     <>
@@ -114,25 +109,6 @@ export default async function Home() {
           ))}
         </div>
       </div>
-
-      {/* Browse by categories — circular, organic style */}
-      <section
-        id="categories"
-        className="mx-auto max-w-7xl scroll-mt-32 px-4 py-14"
-      >
-        <Reveal>
-          <SectionHeader
-            id="categories-heading"
-            align="center"
-            eyebrow="Browse the shelves"
-            title="Browse By Categories"
-            subtitle="Seven shelves, one honest bazaar."
-          />
-        </Reveal>
-        <Reveal delay={100}>
-          <CategoryCircles categories={categories} />
-        </Reveal>
-      </section>
 
       {/* Trust badges */}
       <TrustBadges />
