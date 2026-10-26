@@ -1,7 +1,5 @@
 import HeroSlider from "@/components/HeroSlider";
-import OfferBanners from "@/components/OfferBanners";
 import PromoPopup from "@/components/PromoPopup";
-import FlashSale from "@/components/FlashSale";
 import ProductTabs from "@/components/ProductTabs";
 import TrustBadges from "@/components/TrustBadges";
 import LifeEasyBanner from "@/components/LifeEasyBanner";
@@ -12,7 +10,6 @@ import {
   getBestSellers,
   getNewArrivals,
   getTopRated,
-  getFlashSaleProducts,
 } from "@/lib/catalog";
 
 const FEATURES = [
@@ -74,11 +71,10 @@ const MARQUEE_ITEMS = [
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [bestSellers, newArrivals, topRated, flashSale] = await Promise.all([
+  const [bestSellers, newArrivals, topRated] = await Promise.all([
     getBestSellers(8),
     getNewArrivals(8),
     getTopRated(8),
-    getFlashSaleProducts(8),
   ]);
 
   return (
@@ -115,20 +111,6 @@ export default async function Home() {
 
       {/* "We make your daily life more easy" CTA */}
       <LifeEasyBanner />
-
-      {/* Offer banners — managed from /admin/banners */}
-      <section
-        id="deals"
-        className="mx-auto max-w-7xl scroll-mt-32 px-4 py-14"
-      >
-        <h2 id="deals-heading" className="sr-only">
-          Current offers
-        </h2>
-        <OfferBanners />
-      </section>
-
-      {/* Flash sale */}
-      <FlashSale products={flashSale} />
 
       {/* Tabbed showcase */}
       <ProductTabs

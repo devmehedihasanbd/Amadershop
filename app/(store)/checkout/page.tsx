@@ -259,6 +259,20 @@ export default function CheckoutPage() {
   const [placing, setPlacing] = useState(false);
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
 
+  /* If the customer is logged in, prefill name + phone from their account.
+     Guests just fill the form as before — accounts are optional. */
+  useEffect(() => {
+    fetch("/api/account/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (json?.customer) {
+          if (json.customer.name) setName(json.customer.name);
+          if (json.customer.phone) setPhone(json.customer.phone);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Payment methods are controlled from the admin panel (/admin/payments).
   useEffect(() => {
     let cancelled = false;

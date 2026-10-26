@@ -33,13 +33,13 @@ const TABS = [
     ),
   },
   {
-    href: "/search",
-    label: "Search",
-    match: (p: string) => p.startsWith("/search"),
+    href: "/offers",
+    label: "Offer",
+    match: (p: string) => p === "/offers" || p.startsWith("/offers"),
     icon: (
       <>
-        <circle cx="11" cy="11" r="7" />
-        <path d="M21 21l-4.3-4.3" />
+        <path d="M3 3h7l11 11-7 7L3 10V3z" />
+        <circle cx="8" cy="8" r="1.5" />
       </>
     ),
   },
@@ -119,6 +119,47 @@ export default function BottomTabBar() {
           </span>
           <span className="text-[11px] font-medium">Cart</span>
         </button>
+
+        {/* Account — always last */}
+        <Link
+          href="/account"
+          className={tabCls(
+            pathname === "/account" || pathname.startsWith("/account")
+          )}
+          aria-current={
+            pathname === "/account" || pathname.startsWith("/account")
+              ? "page"
+              : undefined
+          }
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={iconCls(
+              pathname === "/account" || pathname.startsWith("/account")
+            )}
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c0-4 3.5-6.5 8-6.5s8 2.5 8 6.5" />
+          </svg>
+          <span
+            className={`text-[11px] font-semibold ${
+              pathname === "/account" || pathname.startsWith("/account")
+                ? ""
+                : "font-medium"
+            }`}
+          >
+            Account
+          </span>
+          {(pathname === "/account" || pathname.startsWith("/account")) && (
+            <span className="h-1 w-8 rounded-full bg-amber-400" aria-hidden="true" />
+          )}
+        </Link>
       </div>
     </nav>
   );

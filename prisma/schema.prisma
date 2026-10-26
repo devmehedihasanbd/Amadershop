@@ -86,6 +86,14 @@ model Customer {
   area      String
   createdAt DateTime @default(now())
 
+  // Optional customer account (guest checkout still works without one).
+  // A Customer row created by an order has no passwordHash until its
+  // owner registers with that same phone number.
+  passwordHash String? @db.Text
+  email        String? @unique
+  authProvider String? // 'phone' | 'google' | 'facebook'
+  providerId   String?
+
   orders Order[]
 }
 

@@ -12,9 +12,11 @@ type MenuCategory = {
 const MENU_LINKS = [
   { href: "/", label: "Home" },
   { href: "/shop", label: "Shop" },
+  { href: "/offers", label: "Offers" },
   { href: "/search", label: "Search" },
   { href: "/cart", label: "Cart" },
   { href: "/track-order", label: "Track Order" },
+  { href: "/account", label: "Account" },
 ];
 
 /**
